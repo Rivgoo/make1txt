@@ -38,6 +38,7 @@ export interface GlobalSettings {
   ignoredExtensions: string[];
   ignoredPaths: string[];
   useGitignoreDefault: boolean;
+  pruneIgnoredOnRead: boolean;
   outputTemplate: string;
   treePlacement: 'top' | 'bottom';
   treeWrapper: string;

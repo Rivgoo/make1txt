@@ -24,6 +24,7 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   ignoredExtensions: DEFAULT_IGNORED_EXTENSIONS,
   ignoredPaths: DEFAULT_IGNORED_DIRECTORIES,
   useGitignoreDefault: true,
+  pruneIgnoredOnRead: true,
   outputTemplate: '================================================================\nFile: {{path}}\n================================================================\n\n{{content}}\n\n',
   treePlacement: 'top',
   treeWrapper: 'Directory Structure:\n\n{{tree}}\n\n',
@@ -134,7 +135,6 @@ export const useFileStore = create<FileStore>((set, get) => {
       
       if (!isIgnored && !node.isDirectory) {
         const ext = getFileExtension(node.name);
-        
         if (globalSettings.ignoredExtensions.includes(ext)) {
           isIgnored = true;
         } else {
@@ -228,10 +228,19 @@ export const useFileStore = create<FileStore>((set, get) => {
           saveGlobalSettings(activeGlobalSettings);
         }
 
+        const skipPredicate = activeGlobalSettings.pruneIgnoredOnRead
+          ? (name: string, relativePath: string, isDirectory: boolean) => {
+              if (isPathGloballyIgnored(relativePath, activeGlobalSettings.ignoredPaths)) return true;
+              if (!isDirectory && activeGlobalSettings.ignoredExtensions.includes(getFileExtension(name))) return true;
+              return false;
+            }
+          : undefined;
+
         const rawNodes = await readDirectoryRecursively(
           handle, 
           (count) => set({ scannedFilesCount: count }),
-          controller.signal
+          controller.signal,
+          skipPredicate
         );
         
         let gitRegexes: RegExp[] = [];
@@ -359,41 +368,28 @@ export const useFileStore = create<FileStore>((set, get) => {
       set((state) => {
         const exists = state.localFilters.customPatterns.find(p => p.pattern === pattern);
         if (exists) return state;
-        
-        const newFilters = {
-          ...state.localFilters,
-          customPatterns: [...state.localFilters.customPatterns, { id: crypto.randomUUID(), pattern, isActive: true }]
-        };
+        const newFilters = { ...state.localFilters, customPatterns: [...state.localFilters.customPatterns, { id: crypto.randomUUID(), pattern, isActive: true }] };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
     },
 
     updateCustomPattern: (id, newPattern) => {
       set((state) => {
-        const newFilters = {
-          ...state.localFilters,
-          customPatterns: state.localFilters.customPatterns.map(p => p.id === id ? { ...p, pattern: newPattern } : p)
-        };
+        const newFilters = { ...state.localFilters, customPatterns: state.localFilters.customPatterns.map(p => p.id === id ? { ...p, pattern: newPattern } : p) };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
     },
 
     toggleCustomPattern: (id) => {
       set((state) => {
-        const newFilters = {
-          ...state.localFilters,
-          customPatterns: state.localFilters.customPatterns.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p)
-        };
+        const newFilters = { ...state.localFilters, customPatterns: state.localFilters.customPatterns.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p) };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
     },
 
     removeCustomPattern: (id) => {
       set((state) => {
-        const newFilters = {
-          ...state.localFilters,
-          customPatterns: state.localFilters.customPatterns.filter(p => p.id !== id)
-        };
+        const newFilters = { ...state.localFilters, customPatterns: state.localFilters.customPatterns.filter(p => p.id !== id) };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
     },
@@ -403,11 +399,8 @@ export const useFileStore = create<FileStore>((set, get) => {
         const patterns = [...state.localFilters.customPatterns];
         const idx = patterns.findIndex(p => p.id === id);
         if (idx < 0) return state;
-        if (direction === 'up' && idx > 0) {
-          [patterns[idx - 1], patterns[idx]] = [patterns[idx], patterns[idx - 1]];
-        } else if (direction === 'down' && idx < patterns.length - 1) {
-          [patterns[idx + 1], patterns[idx]] = [patterns[idx], patterns[idx + 1]];
-        }
+        if (direction === 'up' && idx > 0) [patterns[idx - 1], patterns[idx]] = [patterns[idx], patterns[idx - 1]];
+        else if (direction === 'down' && idx < patterns.length - 1) [patterns[idx + 1], patterns[idx]] = [patterns[idx], patterns[idx + 1]];
         const newFilters = { ...state.localFilters, customPatterns: patterns };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });

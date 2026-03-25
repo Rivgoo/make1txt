@@ -1,4 +1,3 @@
-// src/core/services/FileSystemService.ts
 import type { FileNode } from '../types/file.types';
 
 export async function requestDirectoryAccess(): Promise<FileSystemDirectoryHandle> {
@@ -23,6 +22,7 @@ export async function readDirectoryRecursively(
   directoryHandle: FileSystemDirectoryHandle,
   onProgress?: (count: number) => void,
   signal?: AbortSignal,
+  skipPredicate?: (name: string, relativePath: string, isDirectory: boolean) => boolean,
   state: { count: number } = { count: 0 },
   currentPath: string = '',
   depth: number = 0,
@@ -44,6 +44,13 @@ export async function readDirectoryRecursively(
   for (const entry of entries) {
     if (signal?.aborted) throw new Error('Scanning cancelled');
     
+    const relativePath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+    const isDirectory = entry.kind === 'directory';
+
+    if (skipPredicate && skipPredicate(entry.name, relativePath, isDirectory)) {
+      continue;
+    }
+
     state.count++;
     
     if (state.count % 50 === 0) {
@@ -51,29 +58,9 @@ export async function readDirectoryRecursively(
       await new Promise(resolve => setTimeout(resolve, 0));
     }
 
-    const relativePath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
     const nodeId = crypto.randomUUID();
 
-    if (entry.kind === 'file') {
-      const fileHandle = entry as FileSystemFileHandle;
-      const file = await fileHandle.getFile();
-      
-      nodes.push({
-        id: nodeId,
-        name: entry.name,
-        relativePath,
-        isDirectory: false,
-        sizeBytes: file.size,
-        handle: fileHandle,
-        depth,
-        parentId,
-        isSelected: true,
-        isIgnored: false,
-        isExpanded: false,
-      });
-    }
-
-    if (entry.kind === 'directory') {
+    if (isDirectory) {
       const dirHandle = entry as FileSystemDirectoryHandle;
       
       nodes.push({
@@ -91,9 +78,26 @@ export async function readDirectoryRecursively(
       });
 
       const childNodes = await readDirectoryRecursively(
-        dirHandle, onProgress, signal, state, relativePath, depth + 1, nodeId
+        dirHandle, onProgress, signal, skipPredicate, state, relativePath, depth + 1, nodeId
       );
       nodes.push(...childNodes);
+    } else {
+      const fileHandle = entry as FileSystemFileHandle;
+      const file = await fileHandle.getFile();
+      
+      nodes.push({
+        id: nodeId,
+        name: entry.name,
+        relativePath,
+        isDirectory: false,
+        sizeBytes: file.size,
+        handle: fileHandle,
+        depth,
+        parentId,
+        isSelected: true,
+        isIgnored: false,
+        isExpanded: false,
+      });
     }
   }
 

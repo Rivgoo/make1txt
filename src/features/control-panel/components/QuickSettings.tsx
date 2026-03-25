@@ -13,8 +13,7 @@ import './QuickSettings.css';
 export function QuickSettings() {
   const { 
     localFilters, updateLocalFilters, toggleExtension, setAllExtensionsState, 
-    addCustomPattern, updateCustomPattern, toggleCustomPattern, 
-    removeCustomPattern, moveCustomPattern
+    addCustomPattern, updateCustomPattern, toggleCustomPattern, removeCustomPattern, moveCustomPattern
   } = useFileStore();
   
   const { showToast } = useToast();

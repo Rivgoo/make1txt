@@ -179,6 +179,17 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
               onChange={(e) => setLocal({ ...local, maxFileSizeKb: Number(e.target.value) })}
             />
           </div>
+
+          <label className="as-checkbox-row" style={{ marginTop: 'var(--spacing-sm)' }}>
+            <input 
+              type="checkbox"
+              style={{ accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
+              checked={local.pruneIgnoredOnRead}
+              onChange={(e) => setLocal({ ...local, pruneIgnoredOnRead: e.target.checked })}
+            />
+            Відсікати глобально ігноровані файли/папки під час сканування (значно покращує продуктивність)
+          </label>
+
         </div>
 
         <div className="as-section">
