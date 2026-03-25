@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { 
   IconBrandGit, IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
-  IconChecks, IconSquareX, IconEye
+  IconChecks, IconSquareX, IconEye, IconBinaryTree
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -12,10 +12,9 @@ import './QuickSettings.css';
 
 export function QuickSettings() {
   const { 
-    localFilters, toggleExtension, setAllExtensionsState, 
+    localFilters, updateLocalFilters, toggleExtension, setAllExtensionsState, 
     addCustomPattern, updateCustomPattern, toggleCustomPattern, 
-    removeCustomPattern, moveCustomPattern, toggleGitignore,
-    toggleShowIgnored
+    removeCustomPattern, moveCustomPattern
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -143,8 +142,8 @@ export function QuickSettings() {
       <div className="qs-section">
         <div 
           className={`toggle-row ${localFilters.hasGitignore ? (localFilters.useGitignore ? 'active' : '') : 'disabled'}`}
-          onClick={() => localFilters.hasGitignore && toggleGitignore()}
-          data-tooltip={!localFilters.hasGitignore ? 'Файл .gitignore не знайдено в корені' : ''}
+          onClick={() => localFilters.hasGitignore && updateLocalFilters({ useGitignore: !localFilters.useGitignore })}
+          data-tooltip={!localFilters.hasGitignore ? 'Файл .gitignore не знайдено' : ''}
           data-tooltip-pos="top"
         >
           <span className="qs-title"><IconBrandGit size={16}/> Враховувати .gitignore</span>
@@ -153,9 +152,27 @@ export function QuickSettings() {
 
         <div 
           className={`toggle-row ${localFilters.showIgnored ? 'active' : ''}`}
-          onClick={toggleShowIgnored}
+          onClick={() => updateLocalFilters({ showIgnored: !localFilters.showIgnored })}
         >
           <span className="qs-title"><IconEye size={16}/> Показати ігноровані файли</span>
+          <div className="toggle-switch" />
+        </div>
+      </div>
+
+      <div className="qs-section">
+        <div 
+          className={`toggle-row ${localFilters.generateTree ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ generateTree: !localFilters.generateTree })}
+        >
+          <span className="qs-title"><IconBinaryTree size={16}/> Генерувати дерево файлів</span>
+          <div className="toggle-switch" />
+        </div>
+
+        <div 
+          className={`toggle-row ${!localFilters.generateTree ? 'disabled' : (localFilters.treeIncludeIgnored ? 'active' : '')}`}
+          onClick={() => localFilters.generateTree && updateLocalFilters({ treeIncludeIgnored: !localFilters.treeIncludeIgnored })}
+        >
+          <span className="qs-title"><IconFilter size={16}/> Дерево: включати ігноровані</span>
           <div className="toggle-switch" />
         </div>
       </div>

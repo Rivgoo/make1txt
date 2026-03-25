@@ -1,3 +1,8 @@
+export interface FileSystemHandle {
+  readonly kind: 'file' | 'directory';
+  readonly name: string;
+}
+
 export interface FileNode {
   id: string;
   name: string;
@@ -20,12 +25,23 @@ export interface GeneratorStats {
   estimatedTokens: number;
 }
 
+export interface TreeSymbols {
+  branch: string;
+  last: string;
+  vertical: string;
+  space: string;
+  ignoredSuffix: string;
+}
+
 export interface GlobalSettings {
   maxFileSizeKb: number;
   ignoredExtensions: string[];
   ignoredPaths: string[];
   useGitignoreDefault: boolean;
   outputTemplate: string;
+  treePlacement: 'top' | 'bottom';
+  treeWrapper: string;
+  treeSymbols: TreeSymbols;
 }
 
 export interface CustomPattern {
@@ -45,6 +61,8 @@ export interface LocalFilters {
   useGitignore: boolean;
   hasGitignore: boolean;
   showIgnored: boolean;
+  generateTree: boolean;
+  treeIncludeIgnored: boolean;
 }
 
 export interface SavedLocalFilters {
@@ -52,6 +70,8 @@ export interface SavedLocalFilters {
   customPatterns: CustomPattern[];
   useGitignore: boolean;
   showIgnored: boolean;
+  generateTree: boolean;
+  treeIncludeIgnored: boolean;
 }
 
 export interface Profile {

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { useFileStore } from '@/store/useFileStore';
 import { useToast } from '@/shared/context/useToast';
 import type { WorkerInput, WorkerOutput } from '@/core/types/worker.types';
+import { generateTextTree } from '@/core/utils/tree.utils';
 
 export function useGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -10,7 +11,7 @@ export function useGenerator() {
   const workerRef = useRef<Worker | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
-  const { nodes, globalSettings, isRestoredFromProfile, setGeneratedText, setActiveTab } = useFileStore();
+  const { nodes, globalSettings, localFilters, rootHandle, isRestoredFromProfile, setGeneratedText, setActiveTab } = useFileStore();
   const { showToast } = useToast();
 
   const cancelGeneration = useCallback(() => {
@@ -26,6 +27,27 @@ export function useGenerator() {
     setProgress(0);
     showToast('warning', 'Скасовано', 'Процес генерації було перервано.');
   }, [showToast]);
+
+  const assembleFinalText = useCallback((fileContentText: string) => {
+    let treeString = '';
+    
+    if (localFilters.generateTree) {
+      const rawTree = generateTextTree(nodes, {
+        includeIgnored: localFilters.treeIncludeIgnored,
+        symbols: globalSettings.treeSymbols,
+        rootName: rootHandle?.name || 'project-root'
+      });
+      if (rawTree) {
+        treeString = globalSettings.treeWrapper.replace('{{tree}}', rawTree);
+      }
+    }
+
+    if (!treeString) return fileContentText;
+
+    return globalSettings.treePlacement === 'top'
+      ? treeString + fileContentText
+      : fileContentText + treeString;
+  }, [localFilters, globalSettings, nodes, rootHandle]);
 
   const startGeneration = useCallback(async () => {
     const selectedFiles = nodes
@@ -50,8 +72,10 @@ export function useGenerator() {
         if (data.type === 'progress') {
           setProgress(data.progress);
         } else if (data.type === 'done') {
-          const text = await data.blob.text();
-          setGeneratedText(text);
+          const fileContentText = await data.blob.text();
+          const finalText = assembleFinalText(fileContentText);
+          
+          setGeneratedText(finalText);
           setActiveTab('result');
           setIsGenerating(false);
           setProgress(100);
@@ -107,9 +131,10 @@ export function useGenerator() {
         if (signal.aborted) throw new Error('Aborted');
 
         const finalBlob = new Blob(chunks, { type: 'text/plain;charset=utf-8' });
-        const text = await finalBlob.text();
+        const fileContentText = await finalBlob.text();
+        const finalText = assembleFinalText(fileContentText);
         
-        setGeneratedText(text);
+        setGeneratedText(finalText);
         setActiveTab('result');
         setProgress(100);
         showToast('success', 'Готово', 'Генерацію завершено.');
@@ -122,7 +147,7 @@ export function useGenerator() {
         abortControllerRef.current = null;
       }
     }
-  }, [nodes, globalSettings.outputTemplate, isRestoredFromProfile, showToast, setGeneratedText, setActiveTab]);
+  }, [nodes, globalSettings.outputTemplate, isRestoredFromProfile, showToast, setGeneratedText, setActiveTab, assembleFinalText]);
 
   return { isGenerating, progress, startGeneration, cancelGeneration };
 }

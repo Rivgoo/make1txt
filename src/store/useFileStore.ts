@@ -11,12 +11,23 @@ export interface FolderStat {
   absoluteTotal: number;
 }
 
+export const DEFAULT_TREE_SYMBOLS = {
+  branch: '├── ',
+  last: '└── ',
+  vertical: '│   ',
+  space: '    ',
+  ignoredSuffix: ' (ignored)'
+};
+
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   maxFileSizeKb: 10240,
   ignoredExtensions: DEFAULT_IGNORED_EXTENSIONS,
   ignoredPaths: DEFAULT_IGNORED_DIRECTORIES,
   useGitignoreDefault: true,
   outputTemplate: '================================================================\nFile: {{path}}\n================================================================\n\n{{content}}\n\n',
+  treePlacement: 'top',
+  treeWrapper: 'Directory Structure:\n\n{{tree}}\n\n',
+  treeSymbols: DEFAULT_TREE_SYMBOLS,
 };
 
 function loadGlobalSettings(): GlobalSettings {
@@ -74,6 +85,7 @@ interface FileStore {
   
   updateGlobalSettings: (newSettings: Partial<GlobalSettings>) => void;
   resetGlobalSettings: () => void;
+  updateLocalFilters: (newFilters: Partial<LocalFilters>) => void;
   
   toggleExtension: (ext: string) => void;
   setAllExtensionsState: (isActive: boolean) => void;
@@ -82,8 +94,6 @@ interface FileStore {
   toggleCustomPattern: (id: string) => void;
   removeCustomPattern: (id: string) => void;
   moveCustomPattern: (id: string, direction: 'up' | 'down') => void;
-  toggleGitignore: () => void;
-  toggleShowIgnored: () => void;
 
   toggleSelection: (id: string, checked: boolean) => void;
   toggleExpand: (id: string) => void;
@@ -122,7 +132,6 @@ export const useFileStore = create<FileStore>((set, get) => {
         isIgnored = true;
       }
       
-      // ВИПРАВЛЕНО: Перевірка глобальних розширень
       if (!isIgnored && !node.isDirectory) {
         const ext = getFileExtension(node.name);
         
@@ -168,7 +177,15 @@ export const useFileStore = create<FileStore>((set, get) => {
     scannedFilesCount: 0,
     rootHandle: null,
     globalSettings: loadGlobalSettings(),
-    localFilters: { extensions: {}, customPatterns: [], useGitignore: true, hasGitignore: false, showIgnored: true },
+    localFilters: { 
+      extensions: {}, 
+      customPatterns: [], 
+      useGitignore: true, 
+      hasGitignore: false, 
+      showIgnored: true,
+      generateTree: true,
+      treeIncludeIgnored: false
+    },
     gitignoreRegexes: [],
     compiledCustomRegexes: [],
     profiles: [],
@@ -244,7 +261,9 @@ export const useFileStore = create<FileStore>((set, get) => {
             customPatterns: applyProfile ? applyProfile.localFilters.customPatterns : [],
             useGitignore: applyProfile ? applyProfile.localFilters.useGitignore : (hasGitignore && activeGlobalSettings.useGitignoreDefault),
             hasGitignore,
-            showIgnored: applyProfile ? (applyProfile.localFilters.showIgnored ?? true) : true
+            showIgnored: applyProfile ? (applyProfile.localFilters.showIgnored ?? true) : true,
+            generateTree: applyProfile ? (applyProfile.localFilters.generateTree ?? true) : true,
+            treeIncludeIgnored: applyProfile ? (applyProfile.localFilters.treeIncludeIgnored ?? false) : false,
           },
           nodes: rawNodes,
           isLoading: false,
@@ -291,6 +310,13 @@ export const useFileStore = create<FileStore>((set, get) => {
           localFilters: newFilters,
           nodes: computeNodes(tempState as FileStore) 
         };
+      });
+    },
+
+    updateLocalFilters: (newFilters) => {
+      set((state) => {
+        const filters = { ...state.localFilters, ...newFilters };
+        return { localFilters: filters, ...recompileAndRecalculate({ ...state, localFilters: filters } as FileStore) };
       });
     },
 
@@ -387,21 +413,6 @@ export const useFileStore = create<FileStore>((set, get) => {
       });
     },
 
-    toggleGitignore: () => {
-      set((state) => {
-        if (!state.localFilters.hasGitignore) return state;
-        const newFilters = { ...state.localFilters, useGitignore: !state.localFilters.useGitignore };
-        const tempState = { ...state, localFilters: newFilters };
-        return { localFilters: newFilters, nodes: computeNodes(tempState as FileStore) };
-      });
-    },
-
-    toggleShowIgnored: () => {
-      set((state) => ({
-        localFilters: { ...state.localFilters, showIgnored: !state.localFilters.showIgnored }
-      }));
-    },
-
     toggleSelection: (id, checked) => {
       set((state) => {
         const target = state.nodes.find(n => n.id === id);
@@ -487,7 +498,9 @@ export const useFileStore = create<FileStore>((set, get) => {
           hiddenExtensions,
           customPatterns: localFilters.customPatterns,
           useGitignore: localFilters.useGitignore,
-          showIgnored: localFilters.showIgnored
+          showIgnored: localFilters.showIgnored,
+          generateTree: localFilters.generateTree,
+          treeIncludeIgnored: localFilters.treeIncludeIgnored
         }
       };
 
@@ -516,7 +529,9 @@ export const useFileStore = create<FileStore>((set, get) => {
             extensions: newExts,
             customPatterns: profile.localFilters.customPatterns,
             useGitignore: profile.localFilters.useGitignore,
-            showIgnored: profile.localFilters.showIgnored ?? true
+            showIgnored: profile.localFilters.showIgnored ?? true,
+            generateTree: profile.localFilters.generateTree ?? true,
+            treeIncludeIgnored: profile.localFilters.treeIncludeIgnored ?? false
           };
 
           const tempState = { ...state, globalSettings: profile.settings, localFilters: newLocalFilters };

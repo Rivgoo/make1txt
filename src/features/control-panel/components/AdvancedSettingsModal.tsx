@@ -1,14 +1,41 @@
 import { useState, useEffect } from 'react';
-import { IconRestore, IconDatabase, IconCode, IconFileZip, IconPlus, IconX } from '@tabler/icons-react';
+import { IconRestore, IconDatabase, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree } from '@tabler/icons-react';
 import { Modal } from '@/shared/ui/Modal/Modal';
 import { Button } from '@/shared/ui/Button/Button';
-import { useFileStore, DEFAULT_GLOBAL_SETTINGS } from '@/store/useFileStore';
+import { Select } from '@/shared/ui/Select/Select';
+import { useFileStore, DEFAULT_GLOBAL_SETTINGS, DEFAULT_TREE_SYMBOLS } from '@/store/useFileStore';
+import { generateTextTree } from '@/core/utils/tree.utils';
+import type { FileNode, FileSystemHandle } from '@/core/types/file.types';
 import './AdvancedSettingsModal.css';
 
 const PRESETS = [
   { name: 'Стандарт', template: '================================================================\nFile: {{path}}\n================================================================\n\n{{content}}\n\n' },
   { name: 'Мінімум', template: '--- {{path}} ---\n{{content}}\n' },
   { name: 'Markdown', template: '### `{{path}}`\n```\n{{content}}\n```\n\n' }
+];
+
+const TREE_PRESETS = [
+  { name: 'ASCII (Стандарт)', symbols: DEFAULT_TREE_SYMBOLS },
+  { name: 'Простий', symbols: { branch: '|- ', last: '`- ', vertical: '|  ', space: '   ', ignoredSuffix: ' (ignored)' } },
+  { name: 'Відступи', symbols: { branch: '  ', last: '  ', vertical: '  ', space: '  ', ignoredSuffix: ' (ignored)' } }
+];
+
+const fakeHandle = { kind: 'file', name: 'fake' } as FileSystemHandle;
+
+const MOCK_TREE_NODES: Partial<FileNode>[] = [
+  { id: '1', name: 'config.json', isDirectory: false, isIgnored: false, parentId: null, handle: fakeHandle },
+  { id: '2', name: 'src', isDirectory: true, isIgnored: false, parentId: null, handle: fakeHandle },
+  { id: '3', name: 'index.ts', isDirectory: false, isIgnored: false, parentId: '2', handle: fakeHandle },
+  { id: '4', name: 'components', isDirectory: true, isIgnored: false, parentId: '2', handle: fakeHandle },
+  { id: '5', name: 'Button.tsx', isDirectory: false, isIgnored: false, parentId: '4', handle: fakeHandle },
+  { id: '6', name: 'utils', isDirectory: true, isIgnored: false, parentId: '4', handle: fakeHandle },
+  { id: '7', name: 'helpers', isDirectory: true, isIgnored: false, parentId: '6', handle: fakeHandle },
+  { id: '8', name: 'math.ts', isDirectory: false, isIgnored: false, parentId: '7', handle: fakeHandle },
+  { id: '9', name: 'deep', isDirectory: true, isIgnored: false, parentId: '7', handle: fakeHandle },
+  { id: '10', name: 'core.ts', isDirectory: false, isIgnored: false, parentId: '9', handle: fakeHandle },
+  { id: '11', name: 'styles.css', isDirectory: false, isIgnored: false, parentId: '2', handle: fakeHandle },
+  { id: '12', name: 'node_modules', isDirectory: true, isIgnored: true, parentId: null, handle: fakeHandle },
+  { id: '13', name: 'README.md', isDirectory: false, isIgnored: false, parentId: null, handle: fakeHandle },
 ];
 
 interface Props {
@@ -78,8 +105,20 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
     .replace(/{{path}}/g, 'src/main.ts')
     .replace(/{{content}}/g, 'console.log("Hello World");');
 
+  const treePreviewRaw = generateTextTree(MOCK_TREE_NODES as FileNode[], {
+    includeIgnored: true,
+    symbols: local.treeSymbols,
+    rootName: 'project-root'
+  });
+  const treePreviewText = local.treeWrapper.replace('{{tree}}', treePreviewRaw);
+
+  const placementOptions = [
+    { value: 'top', label: 'На початку файлу (Зверху)' },
+    { value: 'bottom', label: 'В кінці файлу (Знизу)' }
+  ];
+
   return (
-    <Modal isOpen={isOpen} title="Розширені налаштування" maxWidth="800px" onClose={onClose}>
+    <Modal isOpen={isOpen} title="Розширені налаштування" maxWidth="850px" onClose={onClose}>
       <div className="advanced-settings-body">
         
         <div className="as-section">
@@ -156,7 +195,76 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
         </div>
 
         <div className="as-section">
-          <h4><IconCode size={18}/> Форматування виводу</h4>
+          <h4><IconBinaryTree size={18}/> Структура дерева (Tree)</h4>
+          
+          <div className="as-grid">
+            <div className="as-group">
+              <label>Позиція дерева у фінальному файлі</label>
+              <Select 
+                options={placementOptions}
+                value={local.treePlacement}
+                onChange={(val) => setLocal({ ...local, treePlacement: val as 'top' | 'bottom' })}
+              />
+
+              <div style={{ marginTop: 'var(--spacing-md)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label>Конфігурація символів</label>
+                  <div className="as-presets-row" style={{ marginBottom: 0 }}>
+                    {TREE_PRESETS.map(preset => (
+                      <Button 
+                        key={preset.name} 
+                        variant="secondary" 
+                        onClick={() => setLocal({ ...local, treeSymbols: preset.symbols })}
+                        style={{ padding: '2px 6px', fontSize: '0.7rem' }}
+                      >
+                        {preset.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+                <div className="as-tree-symbols-grid">
+                  <div className="as-tree-symbol-item">
+                    <label>Гілка</label>
+                    <input className="as-input" value={local.treeSymbols.branch} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, branch: e.target.value}})} />
+                  </div>
+                  <div className="as-tree-symbol-item">
+                    <label>Остання</label>
+                    <input className="as-input" value={local.treeSymbols.last} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, last: e.target.value}})} />
+                  </div>
+                  <div className="as-tree-symbol-item">
+                    <label>Стіна</label>
+                    <input className="as-input" value={local.treeSymbols.vertical} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, vertical: e.target.value}})} />
+                  </div>
+                  <div className="as-tree-symbol-item">
+                    <label>Пробіл</label>
+                    <input className="as-input" value={local.treeSymbols.space} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, space: e.target.value}})} />
+                  </div>
+                </div>
+                <div className="as-tree-symbol-item" style={{ marginTop: 'var(--spacing-xs)' }}>
+                  <label>Позначка ігнорованих файлів</label>
+                  <input className="as-input" value={local.treeSymbols.ignoredSuffix} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, ignoredSuffix: e.target.value}})} />
+                </div>
+              </div>
+            </div>
+            
+            <div className="as-group">
+              <label>Шаблон обгортки (використовуйте {'{{tree}}'})</label>
+              <textarea 
+                className="as-textarea"
+                style={{ minHeight: '60px' }}
+                value={local.treeWrapper}
+                onChange={(e) => setLocal({ ...local, treeWrapper: e.target.value })}
+              />
+              <div className="as-preview-box" style={{ marginTop: 'var(--spacing-xs)' }}>
+                <span className="as-preview-label">Прев'ю дерева:</span>
+                <pre>{treePreviewText}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="as-section">
+          <h4><IconCode size={18}/> Форматування виводу файлів</h4>
           <div className="as-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label>Шаблон склеювання файлів. Доступні змінні: {'{{path}}'}, {'{{content}}'}</label>
@@ -181,7 +289,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
             />
 
             <div className="as-preview-box">
-              <span className="as-preview-label">Приклад виводу:</span>
+              <span className="as-preview-label">Приклад виводу файлу:</span>
               <pre>{previewText}</pre>
             </div>
           </div>
