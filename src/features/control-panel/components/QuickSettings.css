@@ -1,0 +1,219 @@
+/* src/features/control-panel/components/QuickSettings.css */
+.quick-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.qs-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+}
+
+.qs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.qs-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.qs-header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.qs-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.extensions-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: var(--spacing-xs);
+}
+
+.ext-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-family: monospace;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.ext-chip:hover {
+  border-color: var(--accent-primary);
+}
+
+.ext-chip.inactive {
+  opacity: 0.7;
+  border-style: dashed;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.ext-chip.inactive .ext-count {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
+.ext-count {
+  background-color: var(--bg-panel);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+}
+
+.patterns-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pattern-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--bg-surface);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: monospace;
+  height: 28px;
+}
+
+.pattern-item.inactive {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.pattern-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pattern-btn {
+  padding: 2px;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.pattern-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.pattern-btn.danger:hover {
+  background-color: var(--danger);
+  color: white;
+}
+
+.pattern-input-group {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-xs);
+}
+
+.pattern-input {
+  flex: 1;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-family: monospace;
+  outline: none;
+}
+
+.pattern-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.pattern-edit-input {
+  flex: 1;
+  background-color: var(--bg-root);
+  border: 1px solid var(--accent-primary);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 0.8rem;
+  outline: none;
+  padding: 2px 6px;
+  margin-right: 8px;
+  width: 100%;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background-color: var(--bg-surface);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+  border: 1px solid var(--border-color);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background-color: var(--text-muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.toggle-row.active .toggle-switch {
+  background-color: rgba(255, 122, 0, 0.2);
+  border-color: var(--accent-primary);
+}
+
+.toggle-row.active .toggle-switch::after {
+  transform: translateX(16px);
+  background-color: var(--accent-primary);
+}
+
+.toggle-row.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

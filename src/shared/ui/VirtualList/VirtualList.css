@@ -1,0 +1,21 @@
+/* src/shared/ui/VirtualList/VirtualList.css */
+.virtual-scroll-viewport {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  position: relative;
+}
+
+.virtual-scroll-container {
+  position: relative;
+  min-width: 100%;
+  width: max-content;
+}
+
+.virtual-scroll-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+}

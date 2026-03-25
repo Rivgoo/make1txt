@@ -1,0 +1,22 @@
+/* src/features/file-browser/components/ResultViewer.css */
+.result-content {
+  padding: 0;
+  display: flex;
+  flex: 1;
+}
+
+.result-textarea {
+  flex: 1;
+  width: 100%;
+  resize: none;
+  padding: var(--spacing-md);
+  background-color: var(--bg-root);
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  font-family: monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre;
+  overflow: auto;
+}

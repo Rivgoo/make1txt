@@ -1,0 +1,31 @@
+/* src/assets/styles/variables.css */
+:root {
+  --bg-root: #141414;      /* ~20,20,20 */
+  --bg-panel: #191919;     /* ~25,25,25 */
+  --bg-surface: #222222;
+  --bg-hover: #2e2e2e;
+  
+  --text-primary: #f5f5f5;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  
+  --accent-primary: #ff7a00; /* Яскраво-оранжевий */
+  --accent-hover: #e06b00;
+  
+  --border-color: #333333;
+  --border-focus: #ff7a00;
+  
+  --danger: #ef4444;
+  --success: #10b981;
+  --warning: #f59e0b;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}

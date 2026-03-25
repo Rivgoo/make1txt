@@ -1,0 +1,146 @@
+/* src/features/control-panel/components/AdvancedSettingsModal.css */
+.advanced-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.as-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.as-section h4 {
+  font-size: 1rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.as-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+.as-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.as-group label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.as-input, .as-textarea {
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.as-input:focus, .as-textarea:focus {
+  border-color: var(--accent-primary);
+}
+
+.as-textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: monospace;
+}
+
+.as-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Tag Inputs */
+.as-tag-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  min-height: 80px;
+  max-height: 150px;
+  overflow-y: auto;
+  align-content: flex-start;
+}
+
+.as-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-family: monospace;
+}
+
+.as-tag-remove {
+  color: var(--text-muted);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.as-tag-remove:hover {
+  color: var(--danger);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.as-tag-input-row {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* Preview Box */
+.as-preview-box {
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+}
+
+.as-preview-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: var(--spacing-xs);
+  text-transform: uppercase;
+}
+
+.as-preview-box pre {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.as-presets-row {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}

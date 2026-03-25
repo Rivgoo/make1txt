@@ -1,0 +1,82 @@
+/* src/features/file-browser/components/FileTreeNode.css */
+.tree-node {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding-right: var(--spacing-md);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.1s;
+  width: max-content;
+  min-width: 100%;
+}
+
+.tree-node:hover {
+  background-color: var(--bg-surface);
+}
+
+.tree-node--ignored {
+  opacity: 0.5;
+}
+
+.tree-node--unselected .tree-node-name,
+.tree-node--unselected .tree-node-icon,
+.tree-node--unselected .tree-node-meta {
+  color: var(--text-muted) !important;
+}
+
+.tree-node-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  margin-right: var(--spacing-xs);
+  transition: color 0.2s;
+}
+
+.tree-node-icon--expander {
+  width: 16px;
+  height: 16px;
+}
+
+.tree-node-icon--expander:hover {
+  color: var(--text-primary);
+}
+
+.tree-node-checkbox {
+  margin-right: var(--spacing-sm);
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent-primary);
+}
+
+.tree-node-name {
+  font-size: 0.85rem;
+  white-space: nowrap;
+  margin-right: var(--spacing-sm);
+}
+
+.tree-node-name--folder {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tree-node-name--file {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.tree-node-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.tree-node-meta-mixed {
+  color: var(--warning);
+  font-weight: 700;
+}
