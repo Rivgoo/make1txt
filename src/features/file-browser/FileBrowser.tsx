@@ -1,4 +1,3 @@
-// src/features/file-browser/FileBrowser.tsx
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   IconFolderOpen, IconLoader2, IconSearch, IconFileOff, 
@@ -36,7 +35,7 @@ export function FileBrowser() {
 
   const { 
     nodes, isLoading, scannedFilesCount, loadDirectory, cancelDirectoryLoad, toggleExpand, toggleSelection, 
-    activeTab, setActiveTab, generatedText, selectAll, deselectAll, previewNode, setPreviewNode 
+    activeTab, setActiveTab, generatedText, selectAll, deselectAll, previewNode, setPreviewNode, localFilters 
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -93,6 +92,8 @@ export function FileBrowser() {
       if (error instanceof Error) {
         if (error.message === 'Scanning cancelled') {
           showToast('warning', 'Скасовано', 'Сканування директорії було перервано.');
+        } else if (error.message === 'Процес завантаження вже триває.') {
+          showToast('warning', 'Зачекайте', error.message);
         } else {
           showToast('error', 'Помилка', error.message);
         }
@@ -147,11 +148,13 @@ export function FileBrowser() {
   }, [nodes]);
 
   const visibleNodes = useMemo(() => {
+    const filteredNodes = localFilters.showIgnored ? nodes : nodes.filter(n => !n.isIgnored);
+
     if (!searchTerm.trim()) {
       const visible = [];
       const hiddenPaths = new Set<string>();
 
-      for (const node of nodes) {
+      for (const node of filteredNodes) {
         if (hiddenPaths.has(node.parentId || '')) {
           hiddenPaths.add(node.id);
           continue;
@@ -167,20 +170,20 @@ export function FileBrowser() {
     const lowerSearch = searchTerm.toLowerCase();
     const matchedNodes = new Set<string>();
 
-    for (const node of nodes) {
+    for (const node of filteredNodes) {
       if (node.name.toLowerCase().includes(lowerSearch)) {
         matchedNodes.add(node.id);
         let currentParent = node.parentId;
         while (currentParent) {
           matchedNodes.add(currentParent);
-          const parentNode = nodes.find(n => n.id === currentParent);
+          const parentNode = filteredNodes.find(n => n.id === currentParent);
           currentParent = parentNode ? parentNode.parentId : null;
         }
       }
     }
 
-    return nodes.filter(node => matchedNodes.has(node.id));
-  }, [nodes, searchTerm]);
+    return filteredNodes.filter(node => matchedNodes.has(node.id));
+  }, [nodes, searchTerm, localFilters.showIgnored]);
 
   return (
     <section className="panel-left" style={{ position: 'relative' }}>
@@ -267,7 +270,7 @@ export function FileBrowser() {
             {nodes.length > 0 && visibleNodes.length === 0 && !isLoading && (
               <div className="empty-state">
                 <IconFileOff size={48} stroke={1.5} />
-                <p>За запитом "{searchTerm}" нічого не знайдено.</p>
+                <p>За поточними фільтрами чи запитом нічого не знайдено.</p>
               </div>
             )}
             

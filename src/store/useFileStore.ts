@@ -1,4 +1,3 @@
-// src/store/useFileStore.ts
 import { create } from 'zustand';
 import type { FileNode, GeneratorStats, Profile, GlobalSettings, LocalFilters, ExtensionStat } from '@/core/types/file.types';
 import { requestDirectoryAccess, readDirectoryRecursively, verifyDirectoryPermission } from '@/core/services/FileSystemService';
@@ -12,7 +11,7 @@ export interface FolderStat {
   absoluteTotal: number;
 }
 
-const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   maxFileSizeKb: 10240,
   ignoredExtensions: DEFAULT_IGNORED_EXTENSIONS,
   ignoredPaths: DEFAULT_IGNORED_DIRECTORIES,
@@ -59,6 +58,7 @@ interface FileStore {
   compiledCustomRegexes: RegExp[];
   profiles: Profile[];
   abortController: AbortController | null;
+  isRestoredFromProfile: boolean;
   
   activeTab: 'tree' | 'result';
   generatedText: string | null;
@@ -69,7 +69,7 @@ interface FileStore {
   setPreviewNode: (node: FileNode | null) => void;
 
   loadDirectory: () => Promise<void>;
-  loadDirectoryFromHandle: (handle: FileSystemDirectoryHandle, applyProfileSettings?: GlobalSettings) => Promise<void>;
+  loadDirectoryFromHandle: (handle: FileSystemDirectoryHandle, applyProfile?: Profile, isRestored?: boolean) => Promise<void>;
   cancelDirectoryLoad: () => void;
   
   updateGlobalSettings: (newSettings: Partial<GlobalSettings>) => void;
@@ -83,14 +83,17 @@ interface FileStore {
   removeCustomPattern: (id: string) => void;
   moveCustomPattern: (id: string, direction: 'up' | 'down') => void;
   toggleGitignore: () => void;
+  toggleShowIgnored: () => void;
 
   toggleSelection: (id: string, checked: boolean) => void;
   toggleExpand: (id: string) => void;
   selectAll: () => void;
   deselectAll: () => void;
   getStats: () => GeneratorStats;
+  
   fetchProfiles: () => Promise<void>;
-  saveCurrentProfile: (name: string) => Promise<void>;
+  saveCurrentProfile: (name: string, saveDirectory: boolean) => Promise<void>;
+  loadProfile: (profile: Profile) => Promise<void>;
   deleteProfile: (id: string) => Promise<void>;
 }
 
@@ -118,11 +121,18 @@ export const useFileStore = create<FileStore>((set, get) => {
       if (!isIgnored && compiledCustomRegexes.some(rx => rx.test(node.relativePath))) {
         isIgnored = true;
       }
+      
+      // ВИПРАВЛЕНО: Перевірка глобальних розширень
       if (!isIgnored && !node.isDirectory) {
         const ext = getFileExtension(node.name);
-        const extStat = localFilters.extensions[ext];
-        if (extStat && !extStat.isActive) {
+        
+        if (globalSettings.ignoredExtensions.includes(ext)) {
           isIgnored = true;
+        } else {
+          const extStat = localFilters.extensions[ext];
+          if (extStat && !extStat.isActive) {
+            isIgnored = true;
+          }
         }
       }
 
@@ -158,11 +168,12 @@ export const useFileStore = create<FileStore>((set, get) => {
     scannedFilesCount: 0,
     rootHandle: null,
     globalSettings: loadGlobalSettings(),
-    localFilters: { extensions: {}, customPatterns: [], useGitignore: true, hasGitignore: false },
+    localFilters: { extensions: {}, customPatterns: [], useGitignore: true, hasGitignore: false, showIgnored: true },
     gitignoreRegexes: [],
     compiledCustomRegexes: [],
     profiles: [],
     abortController: null,
+    isRestoredFromProfile: false,
     
     activeTab: 'tree',
     generatedText: null,
@@ -178,11 +189,14 @@ export const useFileStore = create<FileStore>((set, get) => {
     },
 
     loadDirectory: async () => {
+      if (get().isLoading) throw new Error('Процес завантаження вже триває.');
       const handle = await requestDirectoryAccess();
-      await get().loadDirectoryFromHandle(handle);
+      await get().loadDirectoryFromHandle(handle, undefined, false);
     },
 
-    loadDirectoryFromHandle: async (handle: FileSystemDirectoryHandle, applyProfileSettings?: GlobalSettings) => {
+    loadDirectoryFromHandle: async (handle: FileSystemDirectoryHandle, applyProfile?: Profile, isRestored: boolean = false) => {
+      if (get().isLoading) throw new Error('Процес завантаження вже триває.');
+      
       const controller = new AbortController();
       set({ isLoading: true, scannedFilesCount: 0, previewNode: null, abortController: controller });
       
@@ -190,12 +204,13 @@ export const useFileStore = create<FileStore>((set, get) => {
         const hasPermission = await verifyDirectoryPermission(handle);
         if (!hasPermission) throw new Error('Немає доступу до директорії.');
 
-        if (applyProfileSettings) {
-          set({ globalSettings: applyProfileSettings });
-          saveGlobalSettings(applyProfileSettings);
+        let activeGlobalSettings = get().globalSettings;
+        if (applyProfile) {
+          activeGlobalSettings = applyProfile.settings;
+          set({ globalSettings: activeGlobalSettings });
+          saveGlobalSettings(activeGlobalSettings);
         }
 
-        const currentGlobalSettings = get().globalSettings;
         const rawNodes = await readDirectoryRecursively(
           handle, 
           (count) => set({ scannedFilesCount: count }),
@@ -211,17 +226,25 @@ export const useFileStore = create<FileStore>((set, get) => {
           gitRegexes = createIgnoreRegexes(await file.text());
         }
 
-        const extMap = buildExtMap(rawNodes, currentGlobalSettings, {});
+        const extMap = buildExtMap(rawNodes, activeGlobalSettings, {});
+
+        if (applyProfile) {
+          Object.keys(extMap).forEach(ext => {
+            extMap[ext].isActive = !applyProfile.localFilters.hiddenExtensions.includes(ext);
+          });
+        }
 
         const initialState = { 
           ...get(),
           rootHandle: handle,
           gitignoreRegexes: gitRegexes,
+          isRestoredFromProfile: isRestored,
           localFilters: {
             extensions: extMap,
-            customPatterns: [],
-            useGitignore: hasGitignore && currentGlobalSettings.useGitignoreDefault,
-            hasGitignore
+            customPatterns: applyProfile ? applyProfile.localFilters.customPatterns : [],
+            useGitignore: applyProfile ? applyProfile.localFilters.useGitignore : (hasGitignore && activeGlobalSettings.useGitignoreDefault),
+            hasGitignore,
+            showIgnored: applyProfile ? (applyProfile.localFilters.showIgnored ?? true) : true
           },
           nodes: rawNodes,
           isLoading: false,
@@ -232,8 +255,8 @@ export const useFileStore = create<FileStore>((set, get) => {
         set({ ...initialState, ...recompileAndRecalculate(initialState) });
 
       } catch (error) {
-        if (error instanceof Error && error.message === 'Scanning cancelled') return;
         set({ isLoading: false, scannedFilesCount: 0, abortController: null });
+        if (error instanceof Error && error.message === 'Scanning cancelled') return;
         throw error;
       }
     },
@@ -373,6 +396,12 @@ export const useFileStore = create<FileStore>((set, get) => {
       });
     },
 
+    toggleShowIgnored: () => {
+      set((state) => ({
+        localFilters: { ...state.localFilters, showIgnored: !state.localFilters.showIgnored }
+      }));
+    },
+
     toggleSelection: (id, checked) => {
       set((state) => {
         const target = state.nodes.find(n => n.id === id);
@@ -440,16 +469,65 @@ export const useFileStore = create<FileStore>((set, get) => {
       set({ profiles: data });
     },
 
-    saveCurrentProfile: async (name) => {
-      const { rootHandle, globalSettings } = get();
+    saveCurrentProfile: async (name, saveDirectory) => {
+      const { rootHandle, globalSettings, localFilters } = get();
+      
+      const hiddenExtensions = Object.entries(localFilters.extensions)
+        .filter(([, stat]) => !stat.isActive)
+        .map(([ext]) => ext);
+
       const profile: Profile = {
         id: crypto.randomUUID(),
         name,
-        directoryHandle: rootHandle || undefined,
-        settings: globalSettings
+        lastUsed: Date.now(),
+        directoryHandle: saveDirectory && rootHandle ? rootHandle : undefined,
+        directoryName: saveDirectory && rootHandle ? rootHandle.name : undefined,
+        settings: globalSettings,
+        localFilters: {
+          hiddenExtensions,
+          customPatterns: localFilters.customPatterns,
+          useGitignore: localFilters.useGitignore,
+          showIgnored: localFilters.showIgnored
+        }
       };
+
       await dbService.saveProfile(profile);
       await get().fetchProfiles();
+    },
+
+    loadProfile: async (profile) => {
+      if (get().isLoading) throw new Error('Процес завантаження вже триває.');
+      
+      const updatedProfile = { ...profile, lastUsed: Date.now() };
+      await dbService.saveProfile(updatedProfile);
+      await get().fetchProfiles();
+
+      if (profile.directoryHandle) {
+        await get().loadDirectoryFromHandle(profile.directoryHandle, profile, true);
+      } else {
+        set((state) => {
+          const newExts = { ...state.localFilters.extensions };
+          Object.keys(newExts).forEach(ext => {
+            newExts[ext] = { ...newExts[ext], isActive: !profile.localFilters.hiddenExtensions.includes(ext) };
+          });
+
+          const newLocalFilters = {
+            ...state.localFilters,
+            extensions: newExts,
+            customPatterns: profile.localFilters.customPatterns,
+            useGitignore: profile.localFilters.useGitignore,
+            showIgnored: profile.localFilters.showIgnored ?? true
+          };
+
+          const tempState = { ...state, globalSettings: profile.settings, localFilters: newLocalFilters };
+          return {
+            globalSettings: profile.settings,
+            localFilters: newLocalFilters,
+            ...recompileAndRecalculate(tempState as FileStore)
+          };
+        });
+        saveGlobalSettings(profile.settings);
+      }
     },
 
     deleteProfile: async (id) => {

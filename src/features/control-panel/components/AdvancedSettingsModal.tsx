@@ -1,9 +1,8 @@
-// src/features/control-panel/components/AdvancedSettingsModal.tsx
 import { useState, useEffect } from 'react';
 import { IconRestore, IconDatabase, IconCode, IconFileZip, IconPlus, IconX } from '@tabler/icons-react';
 import { Modal } from '@/shared/ui/Modal/Modal';
 import { Button } from '@/shared/ui/Button/Button';
-import { useFileStore } from '@/store/useFileStore';
+import { useFileStore, DEFAULT_GLOBAL_SETTINGS } from '@/store/useFileStore';
 import './AdvancedSettingsModal.css';
 
 const PRESETS = [
@@ -25,7 +24,6 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
   const [newExt, setNewExt] = useState('');
   const [newPath, setNewPath] = useState('');
 
-  // Derived state to safely reset when modal opens
   if (isOpen !== prevIsOpen) {
     setPrevIsOpen(isOpen);
     if (isOpen) {
@@ -35,7 +33,6 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
     }
   }
 
-  // Debounced auto-save
   useEffect(() => {
     if (!isOpen) return;
     const handler = setTimeout(() => {
@@ -49,6 +46,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
   const handleReset = () => {
     if (confirm('Ви впевнені, що хочете скинути всі глобальні налаштування до стандартних?')) {
       resetGlobalSettings();
+      setLocal(DEFAULT_GLOBAL_SETTINGS);
     }
   };
 

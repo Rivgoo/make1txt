@@ -1,9 +1,8 @@
-// src/features/control-panel/components/QuickSettings.tsx
 import { useState } from 'react';
 import { 
   IconBrandGit, IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
-  IconChecks, IconSquareX
+  IconChecks, IconSquareX, IconEye
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -15,7 +14,8 @@ export function QuickSettings() {
   const { 
     localFilters, toggleExtension, setAllExtensionsState, 
     addCustomPattern, updateCustomPattern, toggleCustomPattern, 
-    removeCustomPattern, moveCustomPattern, toggleGitignore 
+    removeCustomPattern, moveCustomPattern, toggleGitignore,
+    toggleShowIgnored
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -148,6 +148,14 @@ export function QuickSettings() {
           data-tooltip-pos="top"
         >
           <span className="qs-title"><IconBrandGit size={16}/> Враховувати .gitignore</span>
+          <div className="toggle-switch" />
+        </div>
+
+        <div 
+          className={`toggle-row ${localFilters.showIgnored ? 'active' : ''}`}
+          onClick={toggleShowIgnored}
+        >
+          <span className="qs-title"><IconEye size={16}/> Показати ігноровані файли</span>
           <div className="toggle-switch" />
         </div>
       </div>

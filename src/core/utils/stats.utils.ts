@@ -1,4 +1,3 @@
-// src/core/utils/stats.utils.ts
 const BYTES_IN_KILOBYTE = 1024;
 const TOKENS_PER_CHARACTER = 0.25;
 
@@ -24,5 +23,10 @@ export function countWords(text: string): number {
 
 export function getFileExtension(filename: string): string {
   const idx = filename.lastIndexOf('.');
-  return idx > 0 ? filename.slice(idx).toLowerCase() : 'no-extension';
+  
+  if (idx <= 0 || idx === filename.length - 1) {
+    return 'no-extension';
+  }
+  
+  return filename.slice(idx).toLowerCase();
 }

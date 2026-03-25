@@ -1,9 +1,9 @@
-// src/features/control-panel/ControlPanel.tsx
 import { useState } from 'react';
 import { 
   IconDeviceFloppy, IconSquareX, IconSettings, 
   IconChevronDown, IconChevronRight, IconFiles, 
-  IconWeight, IconLetterCase, IconCpu, IconSparkles
+  IconWeight, IconLetterCase, IconCpu, IconSparkles,
+  IconAdjustments
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -28,12 +28,12 @@ export function ControlPanel() {
   });
 
   const { isGenerating, progress, startGeneration, cancelGeneration } = useGenerator();
-  const { fetchProfiles, getStats } = useFileStore();
+  const { fetchProfiles, getStats, isLoading } = useFileStore();
   const { showToast } = useToast();
   const stats = getStats();
 
   useHotkey('enter', true, () => {
-    if (!isGenerating && stats.selectedFiles > 0) {
+    if (!isGenerating && stats.selectedFiles > 0 && !isLoading) {
       startGeneration();
     }
   });
@@ -56,12 +56,15 @@ export function ControlPanel() {
   return (
     <aside className="panel-right">
       <header className="panel-header" style={{ gap: 'var(--spacing-xs)' }}>
-        <h2 style={{ fontSize: '1.25rem', flex: 1 }}>Налаштування</h2>
+        <h2 style={{ fontSize: '1.25rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <IconAdjustments size={24} color="var(--accent-primary)" />
+          Налаштування
+        </h2>
         <Button variant="secondary" onClick={() => setIsAdvancedOpen(true)} data-tooltip="Розширені">
           <IconSettings size={18} />
         </Button>
-        <Button variant="secondary" onClick={handleOpenProfiles} disabled={isGenerating} data-tooltip="Профілі (Ctrl+P)" data-tooltip-pos="left">
-          <IconDeviceFloppy size={18} />
+        <Button variant="secondary" onClick={handleOpenProfiles} disabled={isGenerating || isLoading}>
+          <IconDeviceFloppy size={18} /> Профілі
         </Button>
       </header>
       
@@ -116,7 +119,7 @@ export function ControlPanel() {
         ) : (
           <button 
             className="generate-btn"
-            disabled={stats.selectedFiles === 0}
+            disabled={stats.selectedFiles === 0 || isLoading}
             onClick={startGeneration}
             title="Ctrl+Enter"
           >

@@ -1,4 +1,3 @@
-// src/features/file-browser/components/FileTreeNode.tsx
 import { useEffect, useRef } from 'react';
 import { IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, IconFileText } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
@@ -25,7 +24,7 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
   const isDisabled = node.isIgnored || isEffectivelyEmpty;
 
   const isUnselected = node.isDirectory 
-    ? (isEffectivelyEmpty || (folderStat && folderStat.total > 0 && folderStat.selected === 0))
+    ? (folderStat && folderStat.total > 0 && folderStat.selected === 0)
     : !node.isSelected;
 
   useEffect(() => {

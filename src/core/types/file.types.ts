@@ -1,4 +1,3 @@
-// src/core/types/file.types.ts
 export interface FileNode {
   id: string;
   name: string;
@@ -45,11 +44,22 @@ export interface LocalFilters {
   customPatterns: CustomPattern[];
   useGitignore: boolean;
   hasGitignore: boolean;
+  showIgnored: boolean;
+}
+
+export interface SavedLocalFilters {
+  hiddenExtensions: string[];
+  customPatterns: CustomPattern[];
+  useGitignore: boolean;
+  showIgnored: boolean;
 }
 
 export interface Profile {
   id: string;
   name: string;
+  lastUsed: number;
   directoryHandle?: FileSystemDirectoryHandle;
+  directoryName?: string;
   settings: GlobalSettings;
+  localFilters: SavedLocalFilters;
 }
