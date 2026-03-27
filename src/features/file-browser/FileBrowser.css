@@ -183,3 +183,31 @@
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
+
+/* Tablet Adaptivity */
+@media (max-width: 900px) {
+  .browser-top-bar {
+    flex-wrap: wrap;
+    padding: var(--spacing-sm);
+    gap: var(--spacing-sm);
+  }
+  
+  .browser-tabs {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  
+  .browser-tab {
+    padding: var(--spacing-xs) var(--spacing-md);
+    white-space: nowrap;
+  }
+  
+  .browser-title {
+    font-size: 1.1rem;
+  }
+  
+  .browser-header-tools .btn {
+    padding: 6px;
+  }
+}

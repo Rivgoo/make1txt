@@ -216,3 +216,16 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Tablet Adaptivity */
+@media (max-width: 900px) {
+  .qs-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+  .qs-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

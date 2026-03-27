@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { IconDeviceDesktop } from '@tabler/icons-react';
 import { FileBrowser } from '@/features/file-browser/FileBrowser';
 import { ControlPanel } from '@/features/control-panel/ControlPanel';
 import { useFileStore } from '@/store/useFileStore';
@@ -14,7 +15,7 @@ export default function App() {
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
 
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const language = useFileStore((s) => s.globalSettings.language);
 
   useEffect(() => {
@@ -31,7 +32,13 @@ export default function App() {
       if (!isDraggingRef.current) return;
       
       const newWidth = (e.clientX / window.innerWidth) * 100;
-      if (newWidth >= 25 && newWidth <= 75) {
+      
+      // Calculate dynamic min/max based on 300px min width for each side
+      // This ensures panels don't break on tablet screens when dragged.
+      const minPct = Math.max(10, (300 / window.innerWidth) * 100);
+      const maxPct = Math.min(90, 100 - (300 / window.innerWidth) * 100);
+      
+      if (newWidth >= minPct && newWidth <= maxPct) {
         setLeftWidth(newWidth);
       }
     };
@@ -61,13 +68,21 @@ export default function App() {
   };
 
   return (
-    <div 
-      className={`app-layout ${isDragging ? 'is-dragging' : ''}`}
-      style={{ gridTemplateColumns: `${leftWidth}% 4px ${100 - leftWidth}%` }}
-    >
-      <FileBrowser />
-      <div className="layout-resizer" onMouseDown={handleMouseDown} />
-      <ControlPanel />
-    </div>
+    <>
+      <div className="mobile-overlay">
+        <IconDeviceDesktop size={64} className="mobile-overlay-icon" stroke={1.5} />
+        <h2>{t('mobileWarning.title')}</h2>
+        <p>{t('mobileWarning.desc')}</p>
+      </div>
+      
+      <div 
+        className={`app-layout ${isDragging ? 'is-dragging' : ''}`}
+        style={{ gridTemplateColumns: `${leftWidth}% 4px ${100 - leftWidth}%` }}
+      >
+        <FileBrowser />
+        <div className="layout-resizer" onMouseDown={handleMouseDown} />
+        <ControlPanel />
+      </div>
+    </>
   );
 }

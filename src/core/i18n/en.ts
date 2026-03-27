@@ -18,6 +18,10 @@ export const en = {
     all: 'All',
     none: 'None'
   },
+  mobileWarning: {
+    title: 'Desktop Only',
+    desc: 'This application is designed for desktop or tablet screens. Please use a larger screen or maximize your window to continue working with your codebase.'
+  },
   panel: {
     settings: 'Settings',
     profiles: 'Profiles',

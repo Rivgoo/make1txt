@@ -1,4 +1,7 @@
-/* src/features/layout/Layout.css */
+.mobile-overlay {
+  display: none;
+}
+
 .app-layout {
   display: grid;
   height: 100vh;
@@ -61,4 +64,44 @@
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-panel);
   flex-shrink: 0;
+}
+
+/* 
+  Mobile Fallback View 
+  Triggers on screens < 768px width
+*/
+@media (max-width: 767px) {
+  .app-layout {
+    display: none !important;
+  }
+  
+  .mobile-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: var(--bg-root);
+    color: var(--text-primary);
+    text-align: center;
+    padding: var(--spacing-xl);
+    z-index: 9999;
+  }
+  
+  .mobile-overlay-icon {
+    color: var(--accent-primary);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .mobile-overlay h2 {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .mobile-overlay p {
+    color: var(--text-secondary);
+    max-width: 400px;
+    line-height: 1.5;
+  }
 }
