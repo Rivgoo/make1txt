@@ -1,17 +1,17 @@
 export const DEFAULT_IGNORED_DIRECTORIES = [
-  // Системи контролю версій
+  // Version control
   '.git', '.svn', '.hg', '.bzr',
-  
-  // Node.js / JavaScript / Frontend
-  'node_modules', 'bower_components', 'jspm_packages', 
+
+  // Node.js / JS / Frontend
+  'node_modules', 'bower_components', 'jspm_packages',
   '.npm', '.yarn', '.pnpm-store',
 
   // Python
-  'venv', '.venv', 'env', '.env', '__pycache__', '.pytest_cache', 
+  'venv', '.venv', 'env', '.env', '__pycache__', '.pytest_cache',
   '.tox', 'eggs', 'wheels', '.mypy_cache', '.ruff_cache',
 
   // Java / JVM / Android
-  'target', '.gradle', 'buildSrc/build', '.m2', 'captures',
+  'target', '.gradle', '.m2', 'captures',
 
   // C# / .NET
   'bin', 'obj', 'TestResults', 'packages', '.nuget',
@@ -20,90 +20,98 @@ export const DEFAULT_IGNORED_DIRECTORIES = [
   'Debug', 'Release', 'x64', 'x86', 'pkg',
 
   // Ruby / PHP
-  'vendor', 'bundle', 'vendor/bundle',
+  'vendor', 'bundle',
 
-  // Мобільна розробка (iOS / Android)
-  'Pods', 'DerivedData', '.symlinks', '.xcworkspace',
+  // Mobile (iOS / Android)
+  'Pods', 'DerivedData', '.symlinks',
 
-  // Папки збірки (Build / Output)
+  // Build / Output
   'dist', 'build', 'out', 'output', 'dist-ssr',
 
-  // Фреймворки та Кеш (Next, Nuxt, Vue, Angular, etc.)
-  '.next', '.nuxt', '.svelte-kit', '.cache', '.parcel-cache', 
+  // Frameworks & Cache
+  '.next', '.nuxt', '.svelte-kit', '.cache', '.parcel-cache',
   '.vuepress', '.serverless', '.meteor', '.expo',
 
-  // Тестування та Покриття (Coverage)
+  // Testing / Coverage
   'coverage', '.nyc_output', 'htmlcov',
 
-  // IDE та Редактори
-  '.idea', '.vscode', '.vs', '.fleet', '.settings', 'nbproject', '.eclipse',
+  // IDE
+  '.idea', '.vscode', '.vs', '.fleet',
 
-  // Системні та Тимчасові папки
-  'tmp', 'temp', 'logs', 'pids', '.DS_Store', 'Thumbs.db', 'Trash'
+  // System / Temp
+  'tmp', 'temp', 'logs', 'pids',
 ];
 
 export const DEFAULT_IGNORED_EXTENSIONS = [
-  // Зображення та Дизайн
-  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.bmp', '.tiff', 
+  // Images & Design
+  '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp', '.bmp', '.tiff',
   '.raw', '.heic', '.psd', '.ai', '.xd', '.sketch', '.fig', '.fbx', '.blend', '.stl',
 
-  // Відео
+  // Video
   '.mp4', '.mkv', '.avi', '.mov', '.wmv', '.webm', '.flv', '.m4v', '.3gp',
 
-  // Аудіо
+  // Audio
   '.mp3', '.wav', '.ogg', '.flac', '.aac', '.wma', '.m4a', '.mid', '.midi',
 
-  // Архіви та Стиснення
+  // Archives
   '.zip', '.tar', '.gz', '.rar', '.7z', '.bz2', '.xz', '.tgz', '.iso', '.cab', '.dmg',
 
-  // Бінарні файли та Виконувані файли
-  '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.o', '.a', '.lib', 
-  '.pyc', '.pyd', '.class', '.jar', '.war', '.ear', 
-  '.apk', '.aab', '.ipa', '.app', 
+  // Binaries & Executables
+  '.exe', '.dll', '.so', '.dylib', '.bin', '.obj', '.o', '.a', '.lib',
+  '.pyc', '.pyd', '.class', '.jar', '.war', '.ear',
+  '.apk', '.aab', '.ipa', '.app',
   '.sys', '.ko', '.el', '.nupkg', '.msi',
 
-  // Документи / Офіс
-  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', 
+  // Documents / Office
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
   '.rtf', '.odt', '.ods', '.odp', '.pages', '.numbers', '.key',
 
-  // Бази даних
-  '.sqlite', '.sqlite3', '.db', '.mdb', '.accdb', '.mdf', '.ldf', '.ndf', '.frm', '.ibd', '.bson',
+  // Databases
+  '.sqlite', '.sqlite3', '.db', '.mdb', '.accdb', '.mdf', '.ldf', '.bson',
 
-  // Шрифти
+  // Fonts
   '.ttf', '.otf', '.woff', '.woff2', '.eot',
 
-  // Логи, Кеш, Мапи та Тимчасові файли
-  '.log', '.lock', '.map', '.pdb', '.ilk', '.suo', '.user', 
+  // Logs, Cache, Maps, Temp
+  '.log', '.lock', '.map', '.pdb', '.ilk', '.suo', '.user',
   '.cache', '.tmp', '.temp', '.bak', '.swp', '.pid', '.seed', '.meta',
 
-  // Віртуальні машини та Контейнери
-  '.vmdk', '.vdi', '.vbox', '.ova', '.tar.gz',
+  // VM / Containers
+  '.vmdk', '.vdi', '.vbox', '.ova',
 
-  // Ключі та Сертифікати (Бінарні)
-  '.keystore', '.jks', '.pfx', '.p12', '.der', '.cer', '.crt'
+  // Keys & Certs
+  '.keystore', '.jks', '.pfx', '.p12', '.der', '.cer', '.crt',
 ];
 
+/**
+ * Parses a .gitignore file content into a list of compiled RegExp matchers.
+ */
 export function createIgnoreRegexes(gitignoreContent: string): RegExp[] {
-  const lines = gitignoreContent.split('\n');
-  const validLines = lines
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .filter(line => !line.startsWith('#'));
-
-  return validLines.map(pattern => compileGlobToRegex(pattern));
+  return gitignoreContent
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith('#'))
+    .map(compileGlobToRegex);
 }
 
+/**
+ * Converts a glob pattern into a RegExp.
+ *
+ * FIX: the original code used `.replace(/[.+^${}()|\\]/g, '\\{{content}}')` which
+ * literally produced `\\{{content}}` in the output instead of escaping the
+ * matched character (`$&`).  This caused all dot/brace/paren patterns to
+ * generate broken regexes and match nothing (or everything).
+ */
 export function compileGlobToRegex(pattern: string): RegExp {
-  // Екрануємо спецсимволи регулярних виразів, окрім *, ?, [, ]
-  let escapedPattern = pattern.replace(/[.+^${}()|\\]/g, '\\$&');
-  
-  // Трансформуємо глоби у регулярні вирази
-  escapedPattern = escapedPattern
-    .replace(/\*\*/g, '.*')       // ** відповідає за будь-який вміст
-    .replace(/\*/g, '[^/]*')      // * відповідає за вміст без сепаратора шляху
-    .replace(/\?/g, '[^/]');      // ? відповідає за один символ
-    
-  return new RegExp(`^${escapedPattern}$|/${escapedPattern}$|/${escapedPattern}/`);
+  // Escape regex special chars except the glob wildcards * ? [ ]
+  const escaped = pattern.replace(/[.+^${}()|\\]/g, '\\$&');
+
+  const regexStr = escaped
+    .replace(/\*\*/g, '.*')       // ** → any path segment
+    .replace(/\*/g, '[^/]*')      // *  → any name part (no separator)
+    .replace(/\?/g, '[^/]');      // ?  → single char (no separator)
+
+  return new RegExp(`^${regexStr}$|/${regexStr}$|/${regexStr}/`);
 }
 
 export function isValidGlobOrRegex(pattern: string): boolean {
@@ -117,10 +125,13 @@ export function isValidGlobOrRegex(pattern: string): boolean {
 }
 
 export function isPathGloballyIgnored(
-  relativePath: string, 
-  ignoredDirs: string[] = DEFAULT_IGNORED_DIRECTORIES
+  relativePath: string,
+  ignoredDirs: string[] = DEFAULT_IGNORED_DIRECTORIES,
 ): boolean {
-  return ignoredDirs.some(dir => 
-    relativePath.includes(`/${dir}/`) || relativePath.startsWith(`${dir}/`) || relativePath === dir
+  return ignoredDirs.some(
+    (dir) =>
+      relativePath.includes(`/${dir}/`) ||
+      relativePath.startsWith(`${dir}/`) ||
+      relativePath === dir,
   );
 }

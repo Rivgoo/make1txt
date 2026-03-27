@@ -10,7 +10,7 @@ export const en = {
     warning: 'Warning',
     info: 'Info',
     ready: 'Ready',
-    copy: 'Copy',
+    copy: 'Copy All',
     downloadTxt: 'Download .txt',
     yesDelete: 'Yes, delete',
     copied: 'Copied',
@@ -147,7 +147,13 @@ export const en = {
     done: 'Generation completed successfully.',
     error: 'An error occurred during generation.',
     fileError: '[Error reading file: {{path}}]',
-    copySuccess: 'Text successfully copied to clipboard.',
+    copySuccess: 'Entire text successfully copied to clipboard.',
     copyError: 'Failed to copy text.'
+  },
+  result: {
+    largeWarningTitle: 'File is too large for full preview',
+    largeWarningDesc: 'Total file size is {{size}}. Showing a partial preview to prevent browser lag.',
+    showAll: 'Show All Content (May freeze browser)',
+    truncatedMark: '\n\n... [PREVIEW TRUNCATED] ...\n'
   }
 };

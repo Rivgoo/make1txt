@@ -1,33 +1,47 @@
 import type { FileNode } from '../types/file.types';
 
+const MAX_DEPTH = 100;
+
 export async function requestDirectoryAccess(): Promise<FileSystemDirectoryHandle> {
   try {
     return await window.showDirectoryPicker({ mode: 'read' });
   } catch {
-    throw new Error('Користувач скасував вибір папки або доступ заборонено.');
+    throw new Error('CANCELLED');
   }
 }
 
 export async function verifyDirectoryPermission(
-  directoryHandle: FileSystemDirectoryHandle
+  directoryHandle: FileSystemDirectoryHandle,
 ): Promise<boolean> {
   const permission = await directoryHandle.queryPermission({ mode: 'read' });
   if (permission === 'granted') return true;
-  
-  const requestResult = await directoryHandle.requestPermission({ mode: 'read' });
-  return requestResult === 'granted';
+
+  const result = await directoryHandle.requestPermission({ mode: 'read' });
+  return result === 'granted';
 }
+
+interface ScanState {
+  count: number;
+}
+
+type SkipPredicate = (
+  name: string,
+  relativePath: string,
+  isDirectory: boolean,
+) => boolean;
 
 export async function readDirectoryRecursively(
   directoryHandle: FileSystemDirectoryHandle,
   onProgress?: (count: number) => void,
   signal?: AbortSignal,
-  skipPredicate?: (name: string, relativePath: string, isDirectory: boolean) => boolean,
-  state: { count: number } = { count: 0 },
-  currentPath: string = '',
-  depth: number = 0,
-  parentId: string | null = null
+  skipPredicate?: SkipPredicate,
+  state: ScanState = { count: 0 },
+  currentPath = '',
+  depth = 0,
+  parentId: string | null = null,
 ): Promise<FileNode[]> {
+  if (depth > MAX_DEPTH) return [];
+
   const nodes: FileNode[] = [];
   const entries: FileSystemHandle[] = [];
 
@@ -43,26 +57,24 @@ export async function readDirectoryRecursively(
 
   for (const entry of entries) {
     if (signal?.aborted) throw new Error('Scanning cancelled');
-    
+
     const relativePath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
     const isDirectory = entry.kind === 'directory';
 
-    if (skipPredicate && skipPredicate(entry.name, relativePath, isDirectory)) {
-      continue;
-    }
+    if (skipPredicate?.(entry.name, relativePath, isDirectory)) continue;
 
     state.count++;
-    
-    if (state.count % 50 === 0) {
+
+    if (state.count % 5 === 0) {
       onProgress?.(state.count);
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
 
     const nodeId = crypto.randomUUID();
 
     if (isDirectory) {
       const dirHandle = entry as FileSystemDirectoryHandle;
-      
+
       nodes.push({
         id: nodeId,
         name: entry.name,
@@ -77,14 +89,21 @@ export async function readDirectoryRecursively(
         isExpanded: false,
       });
 
-      const childNodes = await readDirectoryRecursively(
-        dirHandle, onProgress, signal, skipPredicate, state, relativePath, depth + 1, nodeId
+      const children = await readDirectoryRecursively(
+        dirHandle,
+        onProgress,
+        signal,
+        skipPredicate,
+        state,
+        relativePath,
+        depth + 1,
+        nodeId,
       );
-      nodes.push(...childNodes);
+      nodes.push(...children);
     } else {
       const fileHandle = entry as FileSystemFileHandle;
       const file = await fileHandle.getFile();
-      
+
       nodes.push({
         id: nodeId,
         name: entry.name,

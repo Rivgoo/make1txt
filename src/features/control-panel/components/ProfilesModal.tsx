@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconTrash, IconDeviceFloppy, IconSearch, IconClock, 
-  IconFolder, IconFileSettings, IconChevronLeft, IconChevronRight, IconAlertTriangle 
+  IconFolder, IconFileSettings, IconChevronLeft, IconChevronRight, 
+  IconAlertTriangle, IconArchiveFilled, IconSquareRoundedPlus, IconBookmarks, IconFileImport
 } from '@tabler/icons-react';
 import { Modal } from '@/shared/ui/Modal/Modal';
 import { Button } from '@/shared/ui/Button/Button';
@@ -97,9 +98,17 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} title={t('profiles.title')} maxWidth="600px" onClose={onClose}>
+    <Modal 
+      isOpen={isOpen} 
+      title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><IconArchiveFilled size={22} color="var(--accent-primary)" /> {t('profiles.title')}</span>} 
+      maxWidth="750px" 
+      onClose={onClose}
+    >
       <div className="pm-creator">
-        <h4 className="pm-section-title">{t('profiles.createTitle')}</h4>
+        <h4 className="pm-section-title">
+          <IconSquareRoundedPlus size={20} color="var(--accent-primary)" />
+          {t('profiles.createTitle')}
+        </h4>
         <div className="pm-creator-row">
           <input 
             className="pm-input" 
@@ -126,7 +135,10 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
 
       <div className="pm-list-section">
         <div className="pm-list-header">
-          <h4 className="pm-section-title">{t('profiles.savedList')}</h4>
+          <h4 className="pm-section-title">
+            <IconBookmarks size={20} color="var(--accent-primary)" />
+            {t('profiles.savedList')}
+          </h4>
           {profiles.length > 0 && (
             <div className="pm-search-wrapper">
               <IconSearch size={16} className="pm-search-icon" />
@@ -150,7 +162,7 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
               <div key={p.id} className={`pm-item ${confirmDeleteId === p.id ? 'pm-item--delete' : ''}`}>
                 {confirmDeleteId === p.id ? (
                   <div className="pm-confirm-delete">
-                    <IconAlertTriangle size={20} color="var(--danger)" />
+                    <IconAlertTriangle size={24} color="var(--danger)" />
                     <span>{t('profiles.deleteConfirmText')} <strong>{p.name}</strong>?</span>
                     <div className="pm-confirm-actions">
                       <Button variant="danger" onClick={() => handleDelete(p.id)}>{t('common.yesDelete')}</Button>
@@ -159,23 +171,34 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
                   </div>
                 ) : (
                   <>
-                    <div className="pm-item-info">
-                      <span className="pm-item-name">{p.name}</span>
-                      <div className="pm-item-meta">
-                        {p.directoryName ? (
-                          <span className="pm-badge" title={t('profiles.boundToDir')}><IconFolder size={12}/> {p.directoryName}</span>
-                        ) : (
-                          <span className="pm-badge pm-badge--settings" title={t('profiles.settingsOnly')}><IconFileSettings size={12}/> {t('profiles.settingsOnly')}</span>
-                        )}
-                        <span className="pm-meta-text">
-                          <IconClock size={12}/> {formatDate(p.lastUsed)}
-                        </span>
+                    <div className="pm-item-content">
+                      <div className={`pm-item-icon ${!p.directoryName ? 'pm-item-icon--settings' : ''}`}>
+                        {p.directoryName ? <IconFolder size={24} /> : <IconFileSettings size={24} />}
+                      </div>
+                      <div className="pm-item-info">
+                        <span className="pm-item-name">{p.name}</span>
+                        <div className="pm-item-meta">
+                          {p.directoryName ? (
+                            <span className="pm-badge" title={t('profiles.boundToDir')}>
+                              <IconFolder size={14}/> {p.directoryName}
+                            </span>
+                          ) : (
+                            <span className="pm-badge pm-badge--settings" title={t('profiles.settingsOnly')}>
+                              <IconFileSettings size={14}/> {t('profiles.settingsOnly')}
+                            </span>
+                          )}
+                          <span className="pm-meta-text">
+                            <IconClock size={14}/> {formatDate(p.lastUsed)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                     <div className="pm-item-actions">
-                      <Button variant="secondary" onClick={() => handleLoad(p)} disabled={isLoading}>{t('profiles.load')}</Button>
+                      <Button variant="primary" className="pm-load-btn" onClick={() => handleLoad(p)} disabled={isLoading}>
+                        <IconFileImport size={18}/> {t('profiles.load')}
+                      </Button>
                       <button className="pm-btn-icon-danger" onClick={() => setConfirmDeleteId(p.id)} disabled={isLoading}>
-                        <IconTrash size={18}/>
+                        <IconTrash size={20}/>
                       </button>
                     </div>
                   </>
@@ -192,7 +215,7 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(prev => prev - 1)}
             >
-              <IconChevronLeft size={16} />
+              <IconChevronLeft size={20} />
             </button>
             <span className="pm-page-info">{currentPage} / {totalPages}</span>
             <button 
@@ -200,7 +223,7 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(prev => prev + 1)}
             >
-              <IconChevronRight size={16} />
+              <IconChevronRight size={20} />
             </button>
           </div>
         )}

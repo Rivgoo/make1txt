@@ -1,23 +1,44 @@
-// src/core/services/DatabaseService.ts
 import type { Profile } from '@/core/types/file.types';
 
 const DB_NAME = 'CodeGeneratorDB';
 const DB_VERSION = 1;
 const STORE_PROFILES = 'profiles';
+const MAX_RETRIES = 3;
 
 export class DatabaseService {
-  private db: IDBDatabase | null = null;
+  private _db: IDBDatabase | null = null;
+  private _connecting: Promise<void> | null = null;
 
-  public async connect(): Promise<void> {
-    if (this.db) return;
+  async connect(): Promise<void> {
+    if (this._db) return;
 
+    // Deduplicate concurrent connect() calls.
+    if (this._connecting) return this._connecting;
+
+    this._connecting = this._openDb().finally(() => {
+      this._connecting = null;
+    });
+
+    return this._connecting;
+  }
+
+  private _openDb(): Promise<void> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = () => reject(new Error('Помилка підключення до IndexedDB'));
+      request.onerror = () =>
+        reject(new Error('IndexedDB connection failed'));
 
       request.onsuccess = (event) => {
-        this.db = (event.target as IDBOpenDBRequest).result;
+        this._db = (event.target as IDBOpenDBRequest).result;
+
+        this._db.onclose = () => {
+          this._db = null;
+        };
+        this._db.onerror = (ev) => {
+          console.error('IndexedDB error', ev);
+        };
+
         resolve();
       };
 
@@ -30,40 +51,56 @@ export class DatabaseService {
     });
   }
 
-  public async saveProfile(profile: Profile): Promise<void> {
-    await this.connect();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(STORE_PROFILES, 'readwrite');
-      const store = transaction.objectStore(STORE_PROFILES);
-      const request = store.put(profile);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(new Error('Не вдалося зберегти профіль'));
-    });
+  private async _withRetry<T>(operation: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        await this.connect();
+        return await operation();
+      } catch (err) {
+        lastError = err;
+        // Force reconnect on next attempt.
+        this._db = null;
+        await new Promise<void>((resolve) => setTimeout(resolve, 50 * (attempt + 1)));
+      }
+    }
+    throw lastError;
   }
 
-  public async getAllProfiles(): Promise<Profile[]> {
-    await this.connect();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(STORE_PROFILES, 'readonly');
-      const store = transaction.objectStore(STORE_PROFILES);
-      const request = store.getAll();
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(new Error('Не вдалося завантажити профілі'));
-    });
+  saveProfile(profile: Profile): Promise<void> {
+    return this._withRetry(
+      () =>
+        new Promise((resolve, reject) => {
+          const tx = this._db!.transaction(STORE_PROFILES, 'readwrite');
+          const req = tx.objectStore(STORE_PROFILES).put(profile);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(new Error('Failed to save profile'));
+        }),
+    );
   }
 
-  public async deleteProfile(id: string): Promise<void> {
-    await this.connect();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db!.transaction(STORE_PROFILES, 'readwrite');
-      const store = transaction.objectStore(STORE_PROFILES);
-      const request = store.delete(id);
+  getAllProfiles(): Promise<Profile[]> {
+    return this._withRetry(
+      () =>
+        new Promise((resolve, reject) => {
+          const tx = this._db!.transaction(STORE_PROFILES, 'readonly');
+          const req = tx.objectStore(STORE_PROFILES).getAll();
+          req.onsuccess = () => resolve(req.result as Profile[]);
+          req.onerror = () => reject(new Error('Failed to load profiles'));
+        }),
+    );
+  }
 
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(new Error('Не вдалося видалити профіль'));
-    });
+  deleteProfile(id: string): Promise<void> {
+    return this._withRetry(
+      () =>
+        new Promise((resolve, reject) => {
+          const tx = this._db!.transaction(STORE_PROFILES, 'readwrite');
+          const req = tx.objectStore(STORE_PROFILES).delete(id);
+          req.onsuccess = () => resolve();
+          req.onerror = () => reject(new Error('Failed to delete profile'));
+        }),
+    );
   }
 }
 

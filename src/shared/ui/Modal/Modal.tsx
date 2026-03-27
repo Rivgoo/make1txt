@@ -1,11 +1,10 @@
-// src/shared/ui/Modal/Modal.tsx
 import type { ReactNode } from 'react';
 import { IconX } from '@tabler/icons-react';
 import './Modal.css';
 
 interface ModalProps {
   isOpen: boolean;
-  title: string;
+  title: ReactNode;
   maxWidth?: string;
   onClose: () => void;
   children: ReactNode;
