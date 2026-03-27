@@ -187,20 +187,30 @@ export function FileBrowser() {
 
   return (
     <section className="panel-left" style={{ position: 'relative' }}>
-      <div className="browser-tabs">
-        <button
-          className={`browser-tab ${activeTab === 'tree' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tree')}
-        >
-          <IconListTree size={18} /> Структура
-        </button>
-        <button
-          className={`browser-tab ${activeTab === 'result' ? 'active' : ''}`}
-          onClick={() => setActiveTab('result')}
-          disabled={!generatedText}
-        >
-          <IconCode size={18} /> Результат
-        </button>
+      
+      <div className="browser-top-bar">
+        <a href="/" className="brand-link" title="Оновити сторінку">
+          <img src="/logo.png" alt="make1txt logo" className="brand-logo" />
+          <span>make1txt</span>
+        </a>
+        
+        <div className="browser-tabs">
+          <button
+            className={`browser-tab ${activeTab === 'tree' ? 'active' : ''}`}
+            onClick={() => setActiveTab('tree')}
+          >
+            <IconListTree size={18} /> Структура
+          </button>
+          <button
+            className={`browser-tab ${activeTab === 'result' ? 'active' : ''}`}
+            onClick={() => setActiveTab('result')}
+            disabled={!generatedText}
+          >
+            <IconCode size={18} /> Результат
+          </button>
+        </div>
+        
+        <div className="browser-top-spacer"></div>
       </div>
 
       {isLoading && (
