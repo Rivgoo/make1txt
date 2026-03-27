@@ -94,11 +94,14 @@ export function createIgnoreRegexes(gitignoreContent: string): RegExp[] {
 }
 
 export function compileGlobToRegex(pattern: string): RegExp {
-  const escapedPattern = pattern
-    .replace(/[.+^$()|[\]\\]/g, '\\$&')
-    .replace(/\*\*/g, '.*')
-    .replace(/(?<!\.)\*/g, '[^/]*')
-    .replace(/\?/g, '.');
+  // Екрануємо спецсимволи регулярних виразів, окрім *, ?, [, ]
+  let escapedPattern = pattern.replace(/[.+^${}()|\\]/g, '\\$&');
+  
+  // Трансформуємо глоби у регулярні вирази
+  escapedPattern = escapedPattern
+    .replace(/\*\*/g, '.*')       // ** відповідає за будь-який вміст
+    .replace(/\*/g, '[^/]*')      // * відповідає за вміст без сепаратора шляху
+    .replace(/\?/g, '[^/]');      // ? відповідає за один символ
     
   return new RegExp(`^${escapedPattern}$|/${escapedPattern}$|/${escapedPattern}/`);
 }
