@@ -1,7 +1,8 @@
-// src/App.tsx
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileBrowser } from '@/features/file-browser/FileBrowser';
 import { ControlPanel } from '@/features/control-panel/ControlPanel';
+import { useFileStore } from '@/store/useFileStore';
 import '@/features/layout/Layout.css';
 
 export default function App() {
@@ -12,6 +13,18 @@ export default function App() {
   
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
+
+  const { i18n } = useTranslation();
+  const language = useFileStore((s) => s.globalSettings.language);
+
+  useEffect(() => {
+    if (language === 'auto') {
+      const browserLang = navigator.language.toLowerCase();
+      i18n.changeLanguage(browserLang.startsWith('uk') || browserLang.startsWith('ru') ? 'uk' : 'en');
+    } else {
+      i18n.changeLanguage(language);
+    }
+  }, [language, i18n]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {

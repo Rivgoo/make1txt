@@ -34,6 +34,7 @@ export interface TreeSymbols {
 }
 
 export interface GlobalSettings {
+  language: 'auto' | 'en' | 'uk';
   maxFileSizeKb: number;
   ignoredExtensions: string[];
   ignoredPaths: string[];

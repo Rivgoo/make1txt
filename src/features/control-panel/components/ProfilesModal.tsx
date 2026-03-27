@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   IconTrash, IconDeviceFloppy, IconSearch, IconClock, 
   IconFolder, IconFileSettings, IconChevronLeft, IconChevronRight, IconAlertTriangle 
@@ -18,6 +19,7 @@ interface ProfilesModalProps {
 const ITEMS_PER_PAGE = 5;
 
 export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
+  const { t } = useTranslation();
   const [newProfileName, setNewProfileName] = useState('');
   const [saveDirectory, setSaveDirectory] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,9 +50,9 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
       setNewProfileName('');
       setSearchQuery('');
       setCurrentPage(1);
-      showToast('success', 'Збережено', 'Профіль успішно збережено.');
+      showToast('success', t('common.success'), t('profiles.savedSuccess'));
     } catch {
-      showToast('error', 'Помилка', 'Не вдалося зберегти профіль.');
+      showToast('error', t('common.error'), t('profiles.saveError'));
     }
   };
 
@@ -62,15 +64,15 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
       if (currentPage > newTotalPages && newTotalPages > 0) {
         setCurrentPage(newTotalPages);
       }
-      showToast('success', 'Видалено', 'Профіль успішно видалено.');
+      showToast('success', t('common.success'), t('profiles.deletedSuccess'));
     } catch {
-      showToast('error', 'Помилка', 'Не вдалося видалити профіль.');
+      showToast('error', t('common.error'), t('profiles.deleteError'));
     }
   };
 
   const handleLoad = async (profile: Profile) => {
     if (isLoading) {
-      showToast('warning', 'Зайнято', 'Процес завантаження вже триває.');
+      showToast('warning', t('common.wait'), t('browser.alreadyLoading'));
       return;
     }
     
@@ -79,36 +81,36 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
     try {
       await loadProfile(profile);
       if (profile.directoryHandle) {
-        showToast('success', 'Профіль завантажено', 'Директорію та налаштування успішно відновлено.');
+        showToast('success', t('common.success'), t('profiles.loadedWithDir'));
       } else {
-        showToast('info', 'Налаштування застосовано', 'Профіль застосовано без прив\'язки до папки.');
+        showToast('info', t('common.info'), t('profiles.loadedSettingsOnly'));
       }
     } catch (error) {
-      if (error instanceof Error) showToast('warning', 'Увага', error.message);
+      if (error instanceof Error) showToast('warning', t('common.warning'), error.message);
     }
   };
 
   const formatDate = (timestamp: number) => {
-    return new Intl.DateTimeFormat('uk-UA', { 
+    return new Intl.DateTimeFormat(t('settings.langUk') ? 'uk-UA' : 'en-US', { 
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' 
     }).format(new Date(timestamp));
   };
 
   return (
-    <Modal isOpen={isOpen} title="Менеджер профілів" maxWidth="600px" onClose={onClose}>
+    <Modal isOpen={isOpen} title={t('profiles.title')} maxWidth="600px" onClose={onClose}>
       <div className="pm-creator">
-        <h4 className="pm-section-title">Створити новий профіль</h4>
+        <h4 className="pm-section-title">{t('profiles.createTitle')}</h4>
         <div className="pm-creator-row">
           <input 
             className="pm-input" 
-            placeholder="Введіть назву профілю..." 
+            placeholder={t('profiles.namePlaceholder')} 
             value={newProfileName}
             onChange={(e) => setNewProfileName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             disabled={isLoading}
           />
           <Button onClick={handleSave} disabled={!newProfileName.trim() || isLoading}>
-            <IconDeviceFloppy size={18} /> Зберегти
+            <IconDeviceFloppy size={18} /> {t('common.save')}
           </Button>
         </div>
         <label className="pm-checkbox-label">
@@ -118,19 +120,19 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
             onChange={(e) => setSaveDirectory(e.target.checked)}
             disabled={isLoading}
           />
-          Зберегти прив'язку до вибраної папки
+          {t('profiles.saveWithDir')}
         </label>
       </div>
 
       <div className="pm-list-section">
         <div className="pm-list-header">
-          <h4 className="pm-section-title">Збережені профілі</h4>
+          <h4 className="pm-section-title">{t('profiles.savedList')}</h4>
           {profiles.length > 0 && (
             <div className="pm-search-wrapper">
               <IconSearch size={16} className="pm-search-icon" />
               <input 
                 className="pm-search-input" 
-                placeholder="Пошук..." 
+                placeholder={t('common.search')} 
                 value={searchQuery}
                 onChange={handleSearchChange}
               />
@@ -140,19 +142,19 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
 
         <div className="pm-list">
           {profiles.length === 0 ? (
-            <div className="pm-empty">Немає збережених профілів. Налаштуйте фільтри та збережіть їх для швидкого доступу.</div>
+            <div className="pm-empty">{t('profiles.emptyList')}</div>
           ) : currentProfiles.length === 0 ? (
-            <div className="pm-empty">Профілів за запитом "{searchQuery}" не знайдено.</div>
+            <div className="pm-empty">{t('profiles.emptySearch').replace('{{query}}', searchQuery)}</div>
           ) : (
             currentProfiles.map(p => (
               <div key={p.id} className={`pm-item ${confirmDeleteId === p.id ? 'pm-item--delete' : ''}`}>
                 {confirmDeleteId === p.id ? (
                   <div className="pm-confirm-delete">
                     <IconAlertTriangle size={20} color="var(--danger)" />
-                    <span>Ви дійсно бажаєте видалити <strong>{p.name}</strong>?</span>
+                    <span>{t('profiles.deleteConfirmText')} <strong>{p.name}</strong>?</span>
                     <div className="pm-confirm-actions">
-                      <Button variant="danger" onClick={() => handleDelete(p.id)}>Так, видалити</Button>
-                      <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>Скасувати</Button>
+                      <Button variant="danger" onClick={() => handleDelete(p.id)}>{t('common.yesDelete')}</Button>
+                      <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>{t('common.cancel')}</Button>
                     </div>
                   </div>
                 ) : (
@@ -161,18 +163,18 @@ export function ProfilesModal({ isOpen, onClose }: ProfilesModalProps) {
                       <span className="pm-item-name">{p.name}</span>
                       <div className="pm-item-meta">
                         {p.directoryName ? (
-                          <span className="pm-badge" title="Прив'язано до папки"><IconFolder size={12}/> {p.directoryName}</span>
+                          <span className="pm-badge" title={t('profiles.boundToDir')}><IconFolder size={12}/> {p.directoryName}</span>
                         ) : (
-                          <span className="pm-badge pm-badge--settings" title="Тільки налаштування"><IconFileSettings size={12}/> Налаштування</span>
+                          <span className="pm-badge pm-badge--settings" title={t('profiles.settingsOnly')}><IconFileSettings size={12}/> {t('profiles.settingsOnly')}</span>
                         )}
-                        <span className="pm-meta-text" title="Останнє використання">
+                        <span className="pm-meta-text">
                           <IconClock size={12}/> {formatDate(p.lastUsed)}
                         </span>
                       </div>
                     </div>
                     <div className="pm-item-actions">
-                      <Button variant="secondary" onClick={() => handleLoad(p)} disabled={isLoading}>Завантажити</Button>
-                      <button className="pm-btn-icon-danger" onClick={() => setConfirmDeleteId(p.id)} title="Видалити" disabled={isLoading}>
+                      <Button variant="secondary" onClick={() => handleLoad(p)} disabled={isLoading}>{t('profiles.load')}</Button>
+                      <button className="pm-btn-icon-danger" onClick={() => setConfirmDeleteId(p.id)} disabled={isLoading}>
                         <IconTrash size={18}/>
                       </button>
                     </div>

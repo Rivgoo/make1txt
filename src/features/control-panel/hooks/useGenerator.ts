@@ -1,10 +1,12 @@
 import { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFileStore } from '@/store/useFileStore';
 import { useToast } from '@/shared/context/useToast';
 import type { WorkerInput, WorkerOutput } from '@/core/types/worker.types';
 import { generateTextTree } from '@/core/utils/tree.utils';
 
 export function useGenerator() {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   
@@ -25,8 +27,8 @@ export function useGenerator() {
     }
     setIsGenerating(false);
     setProgress(0);
-    showToast('warning', 'Скасовано', 'Процес генерації було перервано.');
-  }, [showToast]);
+    showToast('warning', t('common.warning'), t('generator.cancelled'));
+  }, [showToast, t]);
 
   const assembleFinalText = useCallback((fileContentText: string) => {
     let treeString = '';
@@ -55,7 +57,7 @@ export function useGenerator() {
       .map(n => ({ handle: n.handle as FileSystemFileHandle, path: n.relativePath }));
 
     if (selectedFiles.length === 0) {
-      showToast('warning', 'Порожньо', 'Немає файлів для генерації.');
+      showToast('warning', t('common.warning'), t('generator.empty'));
       return;
     }
 
@@ -79,11 +81,11 @@ export function useGenerator() {
           setActiveTab('result');
           setIsGenerating(false);
           setProgress(100);
-          showToast('success', 'Готово', 'Генерацію завершено.');
+          showToast('success', t('common.success'), t('generator.done'));
           workerRef.current?.terminate();
         } else if (data.type === 'error') {
           setIsGenerating(false);
-          showToast('error', 'Помилка', data.error);
+          showToast('error', t('common.error'), data.error);
           workerRef.current?.terminate();
         }
       };
@@ -114,8 +116,8 @@ export function useGenerator() {
                 .replace(/{{path}}/g, item.path)
                 .replace(/{{content}}/g, text);
             } catch (err) {
-              console.warn(`Пропущено файл ${item.path}:`, err);
-              return `\n[Помилка читання файлу: ${item.path}]\n`;
+              console.warn(`Skipped ${item.path}:`, err);
+              return `\n${t('generator.fileError').replace('{{path}}', item.path)}\n`;
             }
           });
 
@@ -137,17 +139,17 @@ export function useGenerator() {
         setGeneratedText(finalText);
         setActiveTab('result');
         setProgress(100);
-        showToast('success', 'Готово', 'Генерацію завершено.');
+        showToast('success', t('common.success'), t('generator.done'));
         
       } catch (error) {
         if (error instanceof Error && error.message === 'Aborted') return;
-        showToast('error', 'Помилка', 'Сталася помилка під час генерації.');
+        showToast('error', t('common.error'), t('generator.error'));
       } finally {
         setIsGenerating(false);
         abortControllerRef.current = null;
       }
     }
-  }, [nodes, globalSettings.outputTemplate, isRestoredFromProfile, showToast, setGeneratedText, setActiveTab, assembleFinalText]);
+  }, [nodes, globalSettings.outputTemplate, isRestoredFromProfile, showToast, setGeneratedText, setActiveTab, assembleFinalText, t]);
 
   return { isGenerating, progress, startGeneration, cancelGeneration };
 }

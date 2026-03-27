@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   IconDeviceFloppy, IconSquareX, IconSettings, 
   IconChevronDown, IconChevronRight, IconFiles, 
@@ -19,6 +20,7 @@ import './ControlPanel.css';
 import './components/ProgressBar.css';
 
 export function ControlPanel() {
+  const { t } = useTranslation();
   const [isProfilesOpen, setIsProfilesOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   
@@ -49,7 +51,7 @@ export function ControlPanel() {
       await fetchProfiles();
       setIsProfilesOpen(true);
     } catch {
-      showToast('error', 'Помилка', 'Не вдалося завантажити профілі з БД.');
+      showToast('error', t('common.error'), t('profiles.saveError'));
     }
   };
 
@@ -58,13 +60,13 @@ export function ControlPanel() {
       <header className="panel-header" style={{ gap: 'var(--spacing-xs)' }}>
         <h2 style={{ fontSize: '1.25rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
           <IconAdjustments size={24} color="var(--accent-primary)" />
-          Налаштування
+          {t('panel.settings')}
         </h2>
-        <Button variant="secondary" onClick={() => setIsAdvancedOpen(true)} data-tooltip="Розширені">
+        <Button variant="secondary" onClick={() => setIsAdvancedOpen(true)}>
           <IconSettings size={18} />
         </Button>
         <Button variant="secondary" onClick={handleOpenProfiles} disabled={isGenerating || isLoading}>
-          <IconDeviceFloppy size={18} /> Профілі
+          <IconDeviceFloppy size={18} /> {t('panel.profiles')}
         </Button>
       </header>
       
@@ -75,26 +77,26 @@ export function ControlPanel() {
           <div className="stats-header" onClick={toggleStats}>
             <div className="stats-header-title">
               {isStatsExpanded ? <IconChevronDown size={18}/> : <IconChevronRight size={18}/>}
-              Статистика файлів
+              {t('stats.title')}
             </div>
           </div>
           
           {isStatsExpanded && (
             <div className="stats-grid">
               <div className="stat-box">
-                <span className="stat-label"><IconFiles size={14}/> Вибрано</span>
+                <span className="stat-label"><IconFiles size={14}/> {t('stats.selected')}</span>
                 <span className="stat-value">{stats.selectedFiles} <small>/ {stats.totalFiles}</small></span>
               </div>
               <div className="stat-box">
-                <span className="stat-label"><IconWeight size={14}/> Розмір</span>
+                <span className="stat-label"><IconWeight size={14}/> {t('stats.size')}</span>
                 <span className="stat-value">{formatFileSize(stats.totalSizeBytes)}</span>
               </div>
               <div className="stat-box">
-                <span className="stat-label"><IconLetterCase size={14}/> Слів</span>
+                <span className="stat-label"><IconLetterCase size={14}/> {t('stats.words')}</span>
                 <span className="stat-value">{stats.totalWords.toLocaleString()}</span>
               </div>
               <div className="stat-box">
-                <span className="stat-label"><IconCpu size={14}/> Токенів</span>
+                <span className="stat-label"><IconCpu size={14}/> {t('stats.tokens')}</span>
                 <span className="stat-value accent">~{stats.estimatedTokens.toLocaleString()}</span>
               </div>
             </div>
@@ -106,14 +108,14 @@ export function ControlPanel() {
         {isGenerating ? (
           <div className="progress-container">
             <div className="progress-info">
-              <span>Генерація...</span>
-              <span>{progress}%</span>
+              <span>{t('panel.generating')}</span>
+              <span>{t('panel.progress').replace('{{percent}}', progress.toString())}</span>
             </div>
             <div className="progress-track">
               <div className="progress-fill" style={{ width: `${progress}%` }} />
             </div>
             <Button variant="danger" isFullWidth onClick={cancelGeneration}>
-              <IconSquareX size={18} /> Скасувати
+              <IconSquareX size={18} /> {t('panel.cancelGeneration')}
             </Button>
           </div>
         ) : (
@@ -124,7 +126,7 @@ export function ControlPanel() {
             title="Ctrl+Enter"
           >
             <IconSparkles size={20} />
-            Згенерувати результат
+            {t('panel.generateResult')}
           </button>
         )}
       </footer>

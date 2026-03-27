@@ -1,4 +1,4 @@
-// src/features/file-browser/components/ResultViewer.tsx
+import { useTranslation } from 'react-i18next';
 import { useFileStore } from '@/store/useFileStore';
 import { Button } from '@/shared/ui/Button/Button';
 import { IconCopy, IconDownload } from '@tabler/icons-react';
@@ -6,6 +6,7 @@ import { useToast } from '@/shared/context/useToast';
 import './ResultViewer.css';
 
 export function ResultViewer() {
+  const { t } = useTranslation();
   const { generatedText } = useFileStore();
   const { showToast } = useToast();
 
@@ -13,9 +14,9 @@ export function ResultViewer() {
     if (!generatedText) return;
     try {
       await navigator.clipboard.writeText(generatedText);
-      showToast('success', 'Скопійовано', 'Текст успішно додано в буфер обміну.');
+      showToast('success', t('common.copied'), t('generator.copySuccess'));
     } catch {
-      showToast('error', 'Помилка', 'Не вдалося скопіювати текст.');
+      showToast('error', t('common.error'), t('generator.copyError'));
     }
   };
 
@@ -36,10 +37,10 @@ export function ResultViewer() {
     <>
       <header className="panel-header" style={{ justifyContent: 'flex-end', gap: 'var(--spacing-sm)' }}>
         <Button variant="secondary" onClick={handleCopy}>
-          <IconCopy size={18} /> Скопіювати
+          <IconCopy size={18} /> {t('common.copy')}
         </Button>
         <Button variant="primary" onClick={handleDownload}>
-          <IconDownload size={18} /> Завантажити .txt
+          <IconDownload size={18} /> {t('common.downloadTxt')}
         </Button>
       </header>
       <main className="panel-content result-content" style={{ padding: 0, display: 'flex' }}>

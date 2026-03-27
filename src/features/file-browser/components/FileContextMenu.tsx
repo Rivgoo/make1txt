@@ -1,5 +1,5 @@
-// src/features/file-browser/components/FileContextMenu.tsx
 import { useEffect, useState, useLayoutEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   IconFolder, IconFileText, IconCircleCheck, IconCircleDashed, 
   IconWeight, IconClock, IconRoute, IconFiles, IconLoader2, IconX, 
@@ -26,6 +26,7 @@ interface MetaData {
 }
 
 export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContextMenuProps) {
+  const { t } = useTranslation();
   const { 
     toggleSelection, nodes, setPreviewNode, globalSettings, updateGlobalSettings, 
     localFilters, toggleExtension, addCustomPattern 
@@ -82,7 +83,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
           }
         } catch {
           if (isMounted) {
-            setMeta({ modified: 'Недоступно' });
+            setMeta({ modified: t('browser.notAvailable') });
             setIsLoadingMeta(false);
           }
         }
@@ -91,13 +92,13 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
 
     fetchMeta();
     return () => { isMounted = false; };
-  }, [node, nodes]);
+  }, [node, nodes, t]);
 
   const handleCopyPath = () => {
     navigator.clipboard.writeText(node.relativePath).then(() => {
-      showToast('success', 'Скопійовано', 'Відносний шлях скопійовано.');
+      showToast('success', t('common.copied'), t('browser.pathCopied'));
     }).catch(() => {
-      showToast('error', 'Помилка', 'Не вдалося скопіювати шлях.');
+      showToast('error', t('common.error'), t('browser.pathCopyFailed'));
     });
     onClose();
   };
@@ -115,7 +116,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   const handleToggleLocalPath = () => {
     const pattern = node.isDirectory ? `${node.relativePath}/**` : node.relativePath;
     addCustomPattern(pattern);
-    showToast('info', 'Локальний фільтр', `Шлях "${pattern}" додано до ігнорування.`);
+    showToast('info', t('browser.localFilters'), t('quickSettings.ruleAdded').replace('{{pattern}}', pattern));
     onClose();
   };
 
@@ -160,16 +161,16 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
           </button>
         </div>
 
-        <div className="context-menu-section-title">Дії</div>
+        <div className="context-menu-section-title">{t('browser.actions')}</div>
         
         {!node.isDirectory && (
           <button className="context-menu-action" onClick={handlePreview}>
-            <IconEye size={18} /> Переглянути вміст
+            <IconEye size={18} /> {t('browser.viewContent')}
           </button>
         )}
 
         <button className="context-menu-action" onClick={handleCopyPath}>
-          <IconCopy size={18} /> Скопіювати відносний шлях
+          <IconCopy size={18} /> {t('browser.copyPath')}
         </button>
 
         {!node.isIgnored && (
@@ -178,40 +179,40 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
             onClick={handleToggleSelection}
           >
             {node.isSelected ? <IconCircleDashed size={18} /> : <IconCircleCheck size={18} />}
-            {node.isSelected ? 'Зняти виділення' : 'Виділити'}
+            {node.isSelected ? t('browser.deselect') : t('browser.select')}
           </button>
         )}
 
         <div className="context-menu-divider" />
-        <div className="context-menu-section-title">Локальні фільтри (сеанс)</div>
+        <div className="context-menu-section-title">{t('browser.localFilters')}</div>
 
         <button className="context-menu-action action-exclude" onClick={handleToggleLocalPath}>
           <IconMapPin size={18} /> 
-          {node.isDirectory ? 'Ігнорувати папку' : 'Ігнорувати файл'}
+          {node.isDirectory ? t('browser.ignoreFolder') : t('browser.ignoreFile')}
         </button>
 
         {!node.isDirectory && !isGlobalExtIgnored && ext !== 'no-extension' && (
           <button className={`context-menu-action ${isLocalExtIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleLocalExt}>
             <IconMapPin size={18} /> 
-            {isLocalExtIgnored ? 'Включити розширення' : 'Ігнорувати розширення'}
+            {isLocalExtIgnored ? t('browser.includeExt') : t('browser.ignoreExt')}
             <span className="context-menu-action-desc">{ext}</span>
           </button>
         )}
 
         <div className="context-menu-divider" />
-        <div className="context-menu-section-title">Глобальні правила (назавжди)</div>
+        <div className="context-menu-section-title">{t('browser.globalRules')}</div>
 
         {node.isDirectory ? (
           <button className={`context-menu-action ${isGlobalFolderIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleGlobalFolder}>
             <IconWorld size={18} /> 
-            {isGlobalFolderIgnored ? 'Не ігнорувати папку' : 'Завжди ігнорувати папку'}
+            {isGlobalFolderIgnored ? t('browser.globalIncludeFolder') : t('browser.globalIgnoreFolder')}
             <span className="context-menu-action-desc">{node.name}</span>
           </button>
         ) : (
           ext !== 'no-extension' && (
             <button className={`context-menu-action ${isGlobalExtIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleGlobalExt}>
               <IconWorld size={18} /> 
-              {isGlobalExtIgnored ? 'Не ігнорувати розширення' : 'Завжди ігнорувати розширення'}
+              {isGlobalExtIgnored ? t('browser.globalIncludeExt') : t('browser.globalIgnoreExt')}
               <span className="context-menu-action-desc">{ext}</span>
             </button>
           )
@@ -221,7 +222,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
           <div className="meta-row">
             <IconRoute size={16} className="meta-icon" />
             <div className="meta-details">
-              <span className="meta-label">Шлях</span>
+              <span className="meta-label">{t('browser.path')}</span>
               <span className="meta-value">{node.relativePath}</span>
             </div>
           </div>
@@ -229,7 +230,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
           <div className="meta-row">
             <IconWeight size={16} className="meta-icon" />
             <div className="meta-details">
-              <span className="meta-label">Розмір</span>
+              <span className="meta-label">{t('browser.size')}</span>
               <span className="meta-value">
                 {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : formatFileSize(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes)}
               </span>
@@ -240,9 +241,9 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
             <div className="meta-row">
               <IconFiles size={16} className="meta-icon" />
               <div className="meta-details">
-                <span className="meta-label">Файли</span>
+                <span className="meta-label">{t('browser.files')}</span>
                 <span className="meta-value">
-                  {folderStat ? `${folderStat.selected} / ${folderStat.total} вибрано` : 'Обчислення...'}
+                  {folderStat ? `${folderStat.selected} / ${folderStat.total}` : '...'}
                 </span>
               </div>
             </div>
@@ -250,7 +251,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
             <div className="meta-row">
               <IconClock size={16} className="meta-icon" />
               <div className="meta-details">
-                <span className="meta-label">Змінено</span>
+                <span className="meta-label">{t('browser.modified')}</span>
                 <span className="meta-value">
                   {isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : meta?.modified}
                 </span>

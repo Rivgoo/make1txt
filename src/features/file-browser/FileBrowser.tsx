@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   IconFolderOpen, IconLoader2, IconSearch, IconFileOff, 
   IconListTree, IconCode, IconChecks, IconSquareX, IconFiles, IconSquareRoundedX
@@ -24,6 +25,7 @@ interface ContextMenuState {
 }
 
 export function FileBrowser() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ isOpen: false, x: 0, y: 0, node: null });
@@ -87,15 +89,17 @@ export function FileBrowser() {
   const handleSelectFolder = async () => {
     try {
       await loadDirectory();
-      showToast('success', 'Папку завантажено', 'Дерево файлів успішно побудовано.');
+      showToast('success', t('common.success'), t('browser.folderLoaded'));
     } catch (error) {
       if (error instanceof Error) {
-        if (error.message === 'Scanning cancelled') {
-          showToast('warning', 'Скасовано', 'Сканування директорії було перервано.');
-        } else if (error.message === 'Процес завантаження вже триває.') {
-          showToast('warning', 'Зачекайте', error.message);
+        if (error.message === 'CANCELLED') {
+          showToast('warning', t('common.warning'), t('browser.scanCancelled'));
+        } else if (error.message === 'ALREADY_LOADING') {
+          showToast('warning', t('common.wait'), t('browser.alreadyLoading'));
+        } else if (error.message === 'NO_PERMISSION') {
+          showToast('error', t('common.error'), t('browser.noPermission'));
         } else {
-          showToast('error', 'Помилка', error.message);
+          showToast('error', t('common.error'), error.message);
         }
       }
     }
@@ -189,7 +193,7 @@ export function FileBrowser() {
     <section className="panel-left" style={{ position: 'relative' }}>
       
       <div className="browser-top-bar">
-        <a href="/" className="brand-link" title="Оновити сторінку">
+        <a href="/" className="brand-link">
           <img src="/logo.png" alt="make1txt logo" className="brand-logo" />
           <span>make1txt</span>
         </a>
@@ -199,14 +203,14 @@ export function FileBrowser() {
             className={`browser-tab ${activeTab === 'tree' ? 'active' : ''}`}
             onClick={() => setActiveTab('tree')}
           >
-            <IconListTree size={18} /> Структура
+            <IconListTree size={18} /> {t('browser.tabStructure')}
           </button>
           <button
             className={`browser-tab ${activeTab === 'result' ? 'active' : ''}`}
             onClick={() => setActiveTab('result')}
             disabled={!generatedText}
           >
-            <IconCode size={18} /> Результат
+            <IconCode size={18} /> {t('browser.tabResult')}
           </button>
         </div>
         
@@ -216,10 +220,10 @@ export function FileBrowser() {
       {isLoading && (
         <div className="browser-loading-overlay">
           <IconLoader2 size={48} className="spin" color="var(--accent-primary)" />
-          <h3>Сканування директорії...</h3>
-          <p>Оброблено файлів: {scannedFilesCount}</p>
+          <h3>{t('browser.scanning')}</h3>
+          <p>{t('browser.processedFiles').replace('{{count}}', scannedFilesCount.toString())}</p>
           <Button variant="danger" onClick={cancelDirectoryLoad} style={{ marginTop: 'var(--spacing-md)' }}>
-            <IconSquareRoundedX size={18} /> Скасувати
+            <IconSquareRoundedX size={18} /> {t('common.cancel')}
           </Button>
         </div>
       )}
@@ -230,21 +234,21 @@ export function FileBrowser() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 className="browser-title">
                 <IconFiles size={24} className="browser-title-icon" /> 
-                Файли
+                {t('browser.files')}
               </h2>
               
               {nodes.length > 0 && (
                 <div className="browser-header-tools">
-                  <Button variant="secondary" onClick={toggleSearch} data-tooltip="Знайти файл" data-tooltip-pos="bottom">
+                  <Button variant="secondary" onClick={toggleSearch} data-tooltip={t('common.search')} data-tooltip-pos="bottom">
                     <IconSearch size={18} color={isSearchVisible ? 'var(--accent-primary)' : 'var(--text-primary)'} />
                   </Button>
-                  <Button variant="secondary" onClick={selectAll} data-tooltip="Обрати все" data-tooltip-pos="bottom">
+                  <Button variant="secondary" onClick={selectAll} data-tooltip={t('browser.selectAll')} data-tooltip-pos="bottom">
                     <IconChecks size={18} />
                   </Button>
-                  <Button variant="secondary" onClick={deselectAll} data-tooltip="Скинути вибір" data-tooltip-pos="bottom">
+                  <Button variant="secondary" onClick={deselectAll} data-tooltip={t('browser.resetSelection')} data-tooltip-pos="bottom">
                     <IconSquareX size={18} />
                   </Button>
-                  <Button variant="secondary" onClick={handleSelectFolder} disabled={isLoading} data-tooltip="Змінити папку" data-tooltip-pos="bottom">
+                  <Button variant="secondary" onClick={handleSelectFolder} disabled={isLoading} data-tooltip={t('browser.changeFolder')} data-tooltip-pos="bottom">
                     {isLoading ? <IconLoader2 className="spin" size={18} /> : <IconFolderOpen size={18} />}
                   </Button>
                 </div>
@@ -256,7 +260,7 @@ export function FileBrowser() {
                 <IconSearch size={16} className="search-input-icon" color="var(--text-primary)" />
                 <input 
                   className="search-input" 
-                  placeholder="Пошук файлів..." 
+                  placeholder={t('browser.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -268,11 +272,11 @@ export function FileBrowser() {
             {nodes.length === 0 && !isLoading && (
               <div className="empty-state">
                 <IconFolderOpen size={64} stroke={1} color="var(--accent-primary)" />
-                <h3>Дерево файлів порожнє</h3>
-                <p>Оберіть директорію для початку роботи з вашим кодом.</p>
+                <h3>{t('browser.emptyStructureTitle')}</h3>
+                <p>{t('browser.emptyStructureDesc')}</p>
                 <Button variant="primary" onClick={handleSelectFolder} disabled={isLoading}>
                   {isLoading ? <IconLoader2 className="spin" size={18} /> : <IconFolderOpen size={18} />}
-                  Обрати папку
+                  {t('browser.selectFolder')}
                 </Button>
               </div>
             )}
@@ -280,7 +284,7 @@ export function FileBrowser() {
             {nodes.length > 0 && visibleNodes.length === 0 && !isLoading && (
               <div className="empty-state">
                 <IconFileOff size={48} stroke={1.5} />
-                <p>За поточними фільтрами чи запитом нічого не знайдено.</p>
+                <p>{t('browser.notFound')}</p>
               </div>
             )}
             

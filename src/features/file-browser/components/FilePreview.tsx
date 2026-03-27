@@ -1,5 +1,5 @@
-// src/features/file-browser/components/FilePreview.tsx
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconX, IconFileText, IconLoader2 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import { formatFileSize } from '@/core/utils/stats.utils';
@@ -18,6 +18,7 @@ interface MetaInfo {
 }
 
 export function FilePreview({ node, onClose }: FilePreviewProps) {
+  const { t } = useTranslation();
   const { rootHandle } = useFileStore();
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -40,13 +41,13 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
         }
         
         if (file.size > 5 * 1024 * 1024) {
-          if (isMounted) setContent('Файл занадто великий для попереднього перегляду (>5MB).');
+          if (isMounted) setContent(t('browser.notAvailable'));
         } else {
           const text = await file.text();
-          if (isMounted) setContent(text || '(Файл порожній)');
+          if (isMounted) setContent(text || '(Empty)');
         }
       } catch {
-        if (isMounted) setContent('Не вдалося прочитати вміст файлу. Можливо, це бінарний файл.');
+        if (isMounted) setContent(t('browser.notAvailable'));
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -54,7 +55,7 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
 
     loadContent();
     return () => { isMounted = false; };
-  }, [node]);
+  }, [node, t]);
 
   const rootName = rootHandle?.name ? `${rootHandle.name}/` : '';
   const fullPath = `${rootName}${node.relativePath}`;
@@ -73,14 +74,14 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
         </div>
         {meta && (
           <div className="preview-meta-bar">
-            <span title="Браузер обмежує доступ до абсолютного шляху ОС з міркувань безпеки">
-              Шлях: <strong>{fullPath}</strong>
+            <span>
+              {t('browser.path')}: <strong>{fullPath}</strong>
             </span>
             <span>
-              Розмір: <strong>{formatFileSize(meta.size)}</strong>
+              {t('browser.size')}: <strong>{formatFileSize(meta.size)}</strong>
             </span>
             <span>
-              Змінено: <strong>{meta.modified}</strong>
+              {t('browser.modified')}: <strong>{meta.modified}</strong>
             </span>
           </div>
         )}
@@ -89,7 +90,7 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
         {isLoading ? (
           <div className="preview-loading">
             <IconLoader2 size={24} className="spin" />
-            <span>Завантаження...</span>
+            <span>{t('common.loading')}</span>
           </div>
         ) : (
           content

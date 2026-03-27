@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, IconFileText } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
@@ -14,6 +15,7 @@ interface FileTreeNodeProps {
 }
 
 export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect, onContextMenu }: FileTreeNodeProps) {
+  const { t } = useTranslation();
   const paddingLeft = node.depth * 16 + 8;
   const checkboxRef = useRef<HTMLInputElement>(null);
 
@@ -64,7 +66,7 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
   let metaContent: React.ReactNode = formatFileSize(node.sizeBytes);
   if (node.isDirectory && folderStat) {
     if (folderStat.absoluteTotal === 0) {
-      metaContent = "Порожня";
+      metaContent = t('browser.emptyFolder');
     } else if (folderStat.total === 0) {
       metaContent = `0 / ${folderStat.absoluteTotal}`;
     } else if (folderStat.selected === folderStat.total) {

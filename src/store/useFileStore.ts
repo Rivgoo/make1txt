@@ -20,6 +20,7 @@ export const DEFAULT_TREE_SYMBOLS = {
 };
 
 export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
+  language: 'auto',
   maxFileSizeKb: 10240,
   ignoredExtensions: DEFAULT_IGNORED_EXTENSIONS,
   ignoredPaths: DEFAULT_IGNORED_DIRECTORIES,
@@ -109,7 +110,6 @@ interface FileStore {
 }
 
 export const useFileStore = create<FileStore>((set, get) => {
-  
   const computeNodes = (
     state: FileStore, 
     forceSelectExt?: string, 
@@ -206,20 +206,20 @@ export const useFileStore = create<FileStore>((set, get) => {
     },
 
     loadDirectory: async () => {
-      if (get().isLoading) throw new Error('Процес завантаження вже триває.');
+      if (get().isLoading) throw new Error('ALREADY_LOADING');
       const handle = await requestDirectoryAccess();
       await get().loadDirectoryFromHandle(handle, undefined, false);
     },
 
     loadDirectoryFromHandle: async (handle: FileSystemDirectoryHandle, applyProfile?: Profile, isRestored: boolean = false) => {
-      if (get().isLoading) throw new Error('Процес завантаження вже триває.');
+      if (get().isLoading) throw new Error('ALREADY_LOADING');
       
       const controller = new AbortController();
       set({ isLoading: true, scannedFilesCount: 0, previewNode: null, abortController: controller });
       
       try {
         const hasPermission = await verifyDirectoryPermission(handle);
-        if (!hasPermission) throw new Error('Немає доступу до директорії.');
+        if (!hasPermission) throw new Error('NO_PERMISSION');
 
         let activeGlobalSettings = get().globalSettings;
         if (applyProfile) {
@@ -284,7 +284,7 @@ export const useFileStore = create<FileStore>((set, get) => {
 
       } catch (error) {
         set({ isLoading: false, scannedFilesCount: 0, abortController: null });
-        if (error instanceof Error && error.message === 'Scanning cancelled') return;
+        if (error instanceof Error && error.message === 'Scanning cancelled') throw new Error('CANCELLED');
         throw error;
       }
     },
@@ -502,7 +502,7 @@ export const useFileStore = create<FileStore>((set, get) => {
     },
 
     loadProfile: async (profile) => {
-      if (get().isLoading) throw new Error('Процес завантаження вже триває.');
+      if (get().isLoading) throw new Error('ALREADY_LOADING');
       
       const updatedProfile = { ...profile, lastUsed: Date.now() };
       await dbService.saveProfile(updatedProfile);

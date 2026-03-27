@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   IconBrandGit, IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
@@ -11,6 +12,7 @@ import { useToast } from '@/shared/context/useToast';
 import './QuickSettings.css';
 
 export function QuickSettings() {
+  const { t } = useTranslation();
   const { 
     localFilters, updateLocalFilters, toggleExtension, setAllExtensionsState, 
     addCustomPattern, updateCustomPattern, toggleCustomPattern, removeCustomPattern, moveCustomPattern
@@ -28,7 +30,7 @@ export function QuickSettings() {
   const handleAddPattern = () => {
     if (!newPattern.trim()) return;
     if (!isValidGlobOrRegex(newPattern.trim())) {
-      showToast('warning', 'Некоректний патерн', 'Вираз містить синтаксичну помилку.');
+      showToast('warning', t('common.warning'), t('quickSettings.invalidPattern'));
       return;
     }
     addCustomPattern(newPattern.trim());
@@ -47,7 +49,7 @@ export function QuickSettings() {
     } else if (isValidGlobOrRegex(editPatternValue.trim())) {
       updateCustomPattern(editingPatternId, editPatternValue.trim());
     } else {
-      showToast('warning', 'Некоректний патерн', 'Вираз відхилено.');
+      showToast('warning', t('common.warning'), t('quickSettings.ruleRejected'));
       return;
     }
     setEditingPatternId(null);
@@ -59,13 +61,13 @@ export function QuickSettings() {
       {sortedExtensions.length > 0 && (
         <div className="qs-section">
           <div className="qs-header">
-            <span className="qs-title"><IconFileCode size={16}/> Розширення файлів</span>
+            <span className="qs-title"><IconFileCode size={16}/> {t('quickSettings.extensions')}</span>
             <div className="qs-header-actions">
               <Button variant="secondary" onClick={() => setAllExtensionsState(true)}>
-                <IconChecks size={14} /> Усі
+                <IconChecks size={14} /> {t('common.all')}
               </Button>
               <Button variant="secondary" onClick={() => setAllExtensionsState(false)}>
-                <IconSquareX size={14} /> Жодного
+                <IconSquareX size={14} /> {t('common.none')}
               </Button>
             </div>
           </div>
@@ -75,8 +77,6 @@ export function QuickSettings() {
                 key={ext}
                 className={`ext-chip ${stat.isActive ? '' : 'inactive'}`}
                 onClick={() => toggleExtension(ext)}
-                data-tooltip={stat.isActive ? 'Вимкнути' : 'Увімкнути'}
-                data-tooltip-pos="top"
               >
                 {!stat.isActive && <IconEyeOff size={12} />}
                 {ext} <span className="ext-count">{stat.count}</span>
@@ -88,7 +88,7 @@ export function QuickSettings() {
 
       <div className="qs-section">
         <div className="qs-header">
-          <span className="qs-title"><IconFilter size={16}/> Власні правила ігнорування</span>
+          <span className="qs-title"><IconFilter size={16}/> {t('quickSettings.customRules')}</span>
         </div>
         
         {localFilters.customPatterns.length > 0 && (
@@ -127,7 +127,7 @@ export function QuickSettings() {
         <div className="pattern-input-group">
           <input 
             className="pattern-input" 
-            placeholder="Напр. *.spec.ts, /tests/" 
+            placeholder={t('quickSettings.placeholder')} 
             value={newPattern}
             onChange={(e) => setNewPattern(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddPattern()}
@@ -142,10 +142,10 @@ export function QuickSettings() {
         <div 
           className={`toggle-row ${localFilters.hasGitignore ? (localFilters.useGitignore ? 'active' : '') : 'disabled'}`}
           onClick={() => localFilters.hasGitignore && updateLocalFilters({ useGitignore: !localFilters.useGitignore })}
-          data-tooltip={!localFilters.hasGitignore ? 'Файл .gitignore не знайдено' : ''}
+          data-tooltip={!localFilters.hasGitignore ? t('quickSettings.noGitignore') : ''}
           data-tooltip-pos="top"
         >
-          <span className="qs-title"><IconBrandGit size={16}/> Враховувати .gitignore</span>
+          <span className="qs-title"><IconBrandGit size={16}/> {t('quickSettings.useGitignore')}</span>
           <div className="toggle-switch" />
         </div>
 
@@ -153,7 +153,7 @@ export function QuickSettings() {
           className={`toggle-row ${localFilters.showIgnored ? 'active' : ''}`}
           onClick={() => updateLocalFilters({ showIgnored: !localFilters.showIgnored })}
         >
-          <span className="qs-title"><IconEye size={16}/> Показати ігноровані файли</span>
+          <span className="qs-title"><IconEye size={16}/> {t('quickSettings.showIgnored')}</span>
           <div className="toggle-switch" />
         </div>
       </div>
@@ -163,7 +163,7 @@ export function QuickSettings() {
           className={`toggle-row ${localFilters.generateTree ? 'active' : ''}`}
           onClick={() => updateLocalFilters({ generateTree: !localFilters.generateTree })}
         >
-          <span className="qs-title"><IconBinaryTree size={16}/> Генерувати дерево файлів</span>
+          <span className="qs-title"><IconBinaryTree size={16}/> {t('quickSettings.generateStructure')}</span>
           <div className="toggle-switch" />
         </div>
 
@@ -171,7 +171,7 @@ export function QuickSettings() {
           className={`toggle-row ${!localFilters.generateTree ? 'disabled' : (localFilters.treeIncludeIgnored ? 'active' : '')}`}
           onClick={() => localFilters.generateTree && updateLocalFilters({ treeIncludeIgnored: !localFilters.treeIncludeIgnored })}
         >
-          <span className="qs-title"><IconFilter size={16}/> Дерево: включати ігноровані</span>
+          <span className="qs-title"><IconFilter size={16}/> {t('quickSettings.structureIncludeIgnored')}</span>
           <div className="toggle-switch" />
         </div>
       </div>
