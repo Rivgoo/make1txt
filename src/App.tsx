@@ -4,7 +4,6 @@ import { IconDeviceDesktop } from '@tabler/icons-react';
 import { FileBrowser } from '@/features/file-browser/FileBrowser';
 import { ControlPanel } from '@/features/control-panel/ControlPanel';
 import { useFileStore } from '@/store/useFileStore';
-import { Analytics } from "@vercel/analytics/next"
 import '@/features/layout/Layout.css';
 
 export default function App() {
@@ -82,7 +81,6 @@ export default function App() {
         <div className="layout-resizer" onMouseDown={handleMouseDown} />
         <ControlPanel />
       </div>
-      <Analytics />
     </>
   );
 }
