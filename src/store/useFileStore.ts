@@ -236,15 +236,36 @@ export const useFileStore = create<FileStore>((set, get) => {
             }
           : undefined;
 
-        const rawNodes = await readDirectoryRecursively(
+        const rootId = crypto.randomUUID();
+        const rootNode: FileNode = {
+          id: rootId,
+          name: handle.name,
+          relativePath: handle.name, // Тепер відносний шлях починається з назви кореня
+          isDirectory: true,
+          sizeBytes: 0,
+          handle: handle,
+          depth: 0,
+          parentId: null,
+          isSelected: true,
+          isIgnored: false,
+          isExpanded: true,
+        };
+
+        const rawChildren = await readDirectoryRecursively(
           handle, 
           (count) => set({ scannedFilesCount: count }),
           controller.signal,
-          skipPredicate
+          skipPredicate,
+          { count: 0 },
+          handle.name, // Нащадки також успадковують цей шлях
+          1,
+          rootId
         );
+
+        const rawNodes = [rootNode, ...rawChildren];
         
         let gitRegexes: RegExp[] = [];
-        const gitignoreNode = rawNodes.find(n => n.relativePath === '.gitignore' && !n.isDirectory);
+        const gitignoreNode = rawNodes.find(n => n.relativePath === `${handle.name}/.gitignore` && !n.isDirectory);
         const hasGitignore = !!gitignoreNode;
         
         if (hasGitignore) {
@@ -411,7 +432,8 @@ export const useFileStore = create<FileStore>((set, get) => {
         const target = state.nodes.find(n => n.id === id);
         if (!target || target.isIgnored) return state;
 
-        const pathPrefix = target.relativePath + '/';
+        const pathPrefix = `${target.relativePath}/`;
+
         const newNodes = state.nodes.map(node => {
           if (node.isIgnored) return node;
           if (node.id === id || node.relativePath.startsWith(pathPrefix)) {

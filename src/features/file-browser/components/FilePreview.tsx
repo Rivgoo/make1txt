@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { IconX, IconFileText, IconLoader2 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import { formatFileSize } from '@/core/utils/stats.utils';
-import { useFileStore } from '@/store/useFileStore';
 import './FilePreview.css';
 
 interface FilePreviewProps {
@@ -19,7 +18,6 @@ interface MetaInfo {
 
 export function FilePreview({ node, onClose }: FilePreviewProps) {
   const { t } = useTranslation();
-  const { rootHandle } = useFileStore();
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [meta, setMeta] = useState<MetaInfo | null>(null);
@@ -57,9 +55,6 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
     return () => { isMounted = false; };
   }, [node, t]);
 
-  const rootName = rootHandle?.name ? `${rootHandle.name}/` : '';
-  const fullPath = `${rootName}${node.relativePath}`;
-
   return (
     <>
       <div className="preview-header">
@@ -75,7 +70,7 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
         {meta && (
           <div className="preview-meta-bar">
             <span>
-              {t('browser.path')}: <strong>{fullPath}</strong>
+              {t('browser.path')}: <strong>{node.relativePath}</strong>
             </span>
             <span>
               {t('browser.size')}: <strong>{formatFileSize(meta.size)}</strong>

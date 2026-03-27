@@ -17,7 +17,6 @@ export function useGenerator() {
     nodes,
     globalSettings,
     localFilters,
-    rootHandle,
     isRestoredFromProfile,
     setGeneratedText,
     setActiveTab,
@@ -41,7 +40,6 @@ export function useGenerator() {
       const rawTree = generateTextTree(nodes, {
         includeIgnored: localFilters.treeIncludeIgnored,
         symbols: globalSettings.treeSymbols,
-        rootName: rootHandle?.name ?? 'project-root',
       });
 
       if (!rawTree) return fileContentText;
@@ -52,7 +50,7 @@ export function useGenerator() {
         ? treeString + fileContentText
         : fileContentText + treeString;
     },
-    [localFilters, globalSettings, nodes, rootHandle],
+    [localFilters, globalSettings, nodes],
   );
 
   const startGeneration = useCallback(async () => {
@@ -72,7 +70,6 @@ export function useGenerator() {
       globalSettings.maxFileSizeKb > 0 ? globalSettings.maxFileSizeKb * 1024 : 0;
 
     if (!isRestoredFromProfile) {
-      // --- Web Worker path (standard file access) ---
       workerRef.current = new Worker(
         new URL('@/core/workers/generator.worker.ts', import.meta.url),
         { type: 'module' },
@@ -116,7 +113,6 @@ export function useGenerator() {
       };
       workerRef.current.postMessage(payload);
     } else {
-      // --- Main-thread path (profile-restored handles) ---
       const controller = new AbortController();
       abortControllerRef.current = controller;
       const { signal } = controller;
@@ -155,7 +151,6 @@ export function useGenerator() {
           processed += batch.length;
           setProgress(Math.round((processed / total) * 100));
 
-          // Yield between batches to keep the UI responsive.
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
         }
 

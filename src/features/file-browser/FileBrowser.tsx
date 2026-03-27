@@ -130,7 +130,7 @@ export function FileBrowser() {
     for (const node of nodes) {
       if (!node.isDirectory) {
         const parts = node.relativePath.split('/');
-        parts.pop();
+        parts.pop(); // Відкидаємо ім'я файлу
         
         let currentPath = '';
         for (const part of parts) {
@@ -159,7 +159,7 @@ export function FileBrowser() {
       const hiddenPaths = new Set<string>();
 
       for (const node of filteredNodes) {
-        if (hiddenPaths.has(node.parentId || '')) {
+        if (node.parentId && hiddenPaths.has(node.parentId)) {
           hiddenPaths.add(node.id);
           continue;
         }

@@ -3,11 +3,10 @@ import type { FileNode, TreeSymbols } from '../types/file.types';
 interface TreeOptions {
   includeIgnored: boolean;
   symbols: TreeSymbols;
-  rootName: string;
 }
 
 export function generateTextTree(nodes: FileNode[], options: TreeOptions): string {
-  const { includeIgnored, symbols, rootName } = options;
+  const { includeIgnored, symbols } = options;
   
   const validNodes = includeIgnored ? nodes : nodes.filter(n => !n.isIgnored);
   if (validNodes.length === 0) return '';
@@ -31,28 +30,36 @@ export function generateTextTree(nodes: FileNode[], options: TreeOptions): strin
     });
   }
 
-  let output = `${rootName}/\n`;
+  let output = '';
 
-  function traverse(parentId: string | null, prefix: string) {
+  function traverse(parentId: string | null, prefix: string, isAbsoluteRoot = false) {
     const children = childrenMap.get(parentId) || [];
     
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
       const isLast = i === children.length - 1;
       
-      const pointer = isLast ? symbols.last : symbols.branch;
       const suffix = child.isDirectory ? '/' : '';
       const ignoredMark = child.isIgnored ? symbols.ignoredSuffix : '';
       
-      output += `${prefix}${pointer}${child.name}${suffix}${ignoredMark}\n`;
-      
-      if (child.isDirectory) {
-        const extension = isLast ? symbols.space : symbols.vertical;
-        traverse(child.id, prefix + extension);
+      if (isAbsoluteRoot) {
+        // Коренева папка не має ліній-відгалужень
+        output += `${child.name}${suffix}${ignoredMark}\n`;
+        if (child.isDirectory) {
+          traverse(child.id, prefix);
+        }
+      } else {
+        const pointer = isLast ? symbols.last : symbols.branch;
+        output += `${prefix}${pointer}${child.name}${suffix}${ignoredMark}\n`;
+        
+        if (child.isDirectory) {
+          const extension = isLast ? symbols.space : symbols.vertical;
+          traverse(child.id, prefix + extension);
+        }
       }
     }
   }
 
-  traverse(null, '');
+  traverse(null, '', true);
   return output;
 }

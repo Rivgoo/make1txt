@@ -94,22 +94,13 @@ export function createIgnoreRegexes(gitignoreContent: string): RegExp[] {
     .map(compileGlobToRegex);
 }
 
-/**
- * Converts a glob pattern into a RegExp.
- *
- * FIX: the original code used `.replace(/[.+^${}()|\\]/g, '\\{{content}}')` which
- * literally produced `\\{{content}}` in the output instead of escaping the
- * matched character (`$&`).  This caused all dot/brace/paren patterns to
- * generate broken regexes and match nothing (or everything).
- */
 export function compileGlobToRegex(pattern: string): RegExp {
-  // Escape regex special chars except the glob wildcards * ? [ ]
   const escaped = pattern.replace(/[.+^${}()|\\]/g, '\\$&');
 
   const regexStr = escaped
-    .replace(/\*\*/g, '.*')       // ** → any path segment
-    .replace(/\*/g, '[^/]*')      // *  → any name part (no separator)
-    .replace(/\?/g, '[^/]');      // ?  → single char (no separator)
+    .replace(/\*\*/g, '.*')       
+    .replace(/\*/g, '[^/]*')      
+    .replace(/\?/g, '[^/]');      
 
   return new RegExp(`^${regexStr}$|/${regexStr}$|/${regexStr}/`);
 }
@@ -128,10 +119,6 @@ export function isPathGloballyIgnored(
   relativePath: string,
   ignoredDirs: string[] = DEFAULT_IGNORED_DIRECTORIES,
 ): boolean {
-  return ignoredDirs.some(
-    (dir) =>
-      relativePath.includes(`/${dir}/`) ||
-      relativePath.startsWith(`${dir}/`) ||
-      relativePath === dir,
-  );
+  const parts = relativePath.split('/');
+  return ignoredDirs.some(dir => parts.includes(dir));
 }

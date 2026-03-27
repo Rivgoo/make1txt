@@ -12,8 +12,9 @@ import './AdvancedSettingsModal.css';
 const fakeHandle = { kind: 'file', name: 'fake' } as FileSystemHandle;
 
 const MOCK_TREE_NODES: Partial<FileNode>[] = [
-  { id: '1', name: 'config.json', isDirectory: false, isIgnored: false, parentId: null, handle: fakeHandle },
-  { id: '2', name: 'src', isDirectory: true, isIgnored: false, parentId: null, handle: fakeHandle },
+  { id: 'root', name: 'project-root', isDirectory: true, isIgnored: false, parentId: null, handle: fakeHandle },
+  { id: '1', name: 'config.json', isDirectory: false, isIgnored: false, parentId: 'root', handle: fakeHandle },
+  { id: '2', name: 'src', isDirectory: true, isIgnored: false, parentId: 'root', handle: fakeHandle },
   { id: '3', name: 'index.ts', isDirectory: false, isIgnored: false, parentId: '2', handle: fakeHandle },
   { id: '4', name: 'components', isDirectory: true, isIgnored: false, parentId: '2', handle: fakeHandle },
   { id: '5', name: 'Button.tsx', isDirectory: false, isIgnored: false, parentId: '4', handle: fakeHandle },
@@ -23,8 +24,8 @@ const MOCK_TREE_NODES: Partial<FileNode>[] = [
   { id: '9', name: 'deep', isDirectory: true, isIgnored: false, parentId: '7', handle: fakeHandle },
   { id: '10', name: 'core.ts', isDirectory: false, isIgnored: false, parentId: '9', handle: fakeHandle },
   { id: '11', name: 'styles.css', isDirectory: false, isIgnored: false, parentId: '2', handle: fakeHandle },
-  { id: '12', name: 'node_modules', isDirectory: true, isIgnored: true, parentId: null, handle: fakeHandle },
-  { id: '13', name: 'README.md', isDirectory: false, isIgnored: false, parentId: null, handle: fakeHandle },
+  { id: '12', name: 'node_modules', isDirectory: true, isIgnored: true, parentId: 'root', handle: fakeHandle },
+  { id: '13', name: 'README.md', isDirectory: false, isIgnored: false, parentId: 'root', handle: fakeHandle },
 ];
 
 interface Props {
@@ -109,9 +110,9 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
 
   const treePreviewRaw = generateTextTree(MOCK_TREE_NODES as FileNode[], {
     includeIgnored: true,
-    symbols: local.treeSymbols,
-    rootName: 'project-root'
+    symbols: local.treeSymbols
   });
+  
   const treePreviewText = local.treeWrapper.replace('{{tree}}', treePreviewRaw);
 
   const placementOptions = [
