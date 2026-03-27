@@ -33,10 +33,8 @@ export default function App() {
       
       const newWidth = (e.clientX / window.innerWidth) * 100;
       
-      // Calculate dynamic min/max based on 300px min width for each side
-      // This ensures panels don't break on tablet screens when dragged.
-      const minPct = Math.max(10, (300 / window.innerWidth) * 100);
-      const maxPct = Math.min(90, 100 - (300 / window.innerWidth) * 100);
+      const minPct = Math.max(20, (550 / window.innerWidth) * 100);
+      const maxPct = Math.min(80, 100 - (400 / window.innerWidth) * 100);
       
       if (newWidth >= minPct && newWidth <= maxPct) {
         setLeftWidth(newWidth);
