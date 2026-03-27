@@ -6,9 +6,9 @@ import { IconCopy, IconDownload, IconAlertTriangle, IconEye } from '@tabler/icon
 import { useToast } from '@/shared/context/useToast';
 import { formatFileSize } from '@/core/utils/stats.utils';
 import './ResultViewer.css';
-
-const MAX_PREVIEW_CHARS = 1_000_000;
-const TRIGGER_TRUNCATE_CHARS = 1_500_000;
+  
+const MAX_PREVIEW_CHARS = 2_000_000;
+const TRIGGER_TRUNCATE_CHARS = 3_000_000;
 
 function copyViaTextarea(text: string): boolean {
   const textarea = document.createElement('textarea');
