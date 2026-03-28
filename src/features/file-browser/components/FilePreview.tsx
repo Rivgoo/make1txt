@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconX, IconFileText, IconLoader2 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
-import { formatFileSize } from '@/core/utils/stats.utils';
+import { formatFileSize, estimateTokenCount } from '@/core/utils/stats.utils';
 import './FilePreview.css';
 
 interface FilePreviewProps {
@@ -74,6 +74,9 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
             </span>
             <span>
               {t('browser.size')}: <strong>{formatFileSize(meta.size)}</strong>
+            </span>
+            <span>
+              {t('stats.tokens')}: <strong>~{estimateTokenCount(meta.size).toLocaleString()}</strong>
             </span>
             <span>
               {t('browser.modified')}: <strong>{meta.modified}</strong>

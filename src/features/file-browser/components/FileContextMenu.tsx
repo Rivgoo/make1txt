@@ -3,13 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconFolder, IconFileText, IconCircleCheck, IconCircleDashed, 
   IconWeight, IconClock, IconRoute, IconFiles, IconLoader2, IconX, 
-  IconEye, IconWorld, IconMapPin, IconCopy
+  IconEye, IconWorld, IconMapPin, IconCopy, IconCpu
 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
 import { useFileStore } from '@/store/useFileStore';
 import { useToast } from '@/shared/context/useToast';
-import { formatFileSize, getFileExtension } from '@/core/utils/stats.utils';
+import { formatFileSize, getFileExtension, estimateTokenCount } from '@/core/utils/stats.utils';
 import './FileContextMenu.css';
 
 interface FileContextMenuProps {
@@ -233,6 +233,16 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
               <span className="meta-label">{t('browser.size')}</span>
               <span className="meta-value">
                 {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : formatFileSize(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes)}
+              </span>
+            </div>
+          </div>
+
+          <div className="meta-row">
+            <IconCpu size={16} className="meta-icon" />
+            <div className="meta-details">
+              <span className="meta-label">{t('stats.tokens')}</span>
+              <span className="meta-value">
+                {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : `~${estimateTokenCount(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes).toLocaleString()}`}
               </span>
             </div>
           </div>

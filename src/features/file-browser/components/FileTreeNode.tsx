@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, IconFileText } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
-import { formatFileSize } from '@/core/utils/stats.utils';
+import { formatFileSize, estimateTokenCount } from '@/core/utils/stats.utils';
 import './FileTreeNode.css';
 
 interface FileTreeNodeProps {
@@ -83,6 +83,9 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
     }
   }
 
+  const byteSize = node.isDirectory ? (folderStat?.sizeBytes || 0) : node.sizeBytes;
+  const tokensCount = estimateTokenCount(byteSize);
+
   const isIgnoredVisually = node.isIgnored || isEffectivelyEmpty;
   const nodeClass = `tree-node ${isIgnoredVisually ? 'tree-node--ignored' : ''} ${isUnselected && !isIgnoredVisually ? 'tree-node--unselected' : ''}`;
 
@@ -123,6 +126,12 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
 
       <span className="tree-node-meta">
         {metaContent}
+      </span>
+
+      <div className="tree-node-leader" />
+
+      <span className="tree-node-tokens" title={t('stats.tokens')}>
+        ~{tokensCount.toLocaleString()}
       </span>
     </div>
   );

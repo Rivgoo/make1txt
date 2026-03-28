@@ -9,6 +9,7 @@ export interface FolderStat {
   total: number;
   selected: number;
   absoluteTotal: number;
+  sizeBytes: number;
 }
 
 export const DEFAULT_TREE_SYMBOLS = {
@@ -240,7 +241,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const rootNode: FileNode = {
           id: rootId,
           name: handle.name,
-          relativePath: handle.name, // Тепер відносний шлях починається з назви кореня
+          relativePath: handle.name,
           isDirectory: true,
           sizeBytes: 0,
           handle: handle,
@@ -257,7 +258,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           controller.signal,
           skipPredicate,
           { count: 0 },
-          handle.name, // Нащадки також успадковують цей шлях
+          handle.name,
           1,
           rootId
         );

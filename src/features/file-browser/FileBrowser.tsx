@@ -123,20 +123,21 @@ export function FileBrowser() {
 
     for (const node of nodes) {
       if (node.isDirectory) {
-        stats[node.relativePath] = { total: 0, selected: 0, absoluteTotal: 0 };
+        stats[node.relativePath] = { total: 0, selected: 0, absoluteTotal: 0, sizeBytes: 0 };
       }
     }
 
     for (const node of nodes) {
       if (!node.isDirectory) {
         const parts = node.relativePath.split('/');
-        parts.pop(); // Відкидаємо ім'я файлу
+        parts.pop();
         
         let currentPath = '';
         for (const part of parts) {
           currentPath = currentPath ? `${currentPath}/${part}` : part;
           if (stats[currentPath]) {
             stats[currentPath].absoluteTotal += 1;
+            stats[currentPath].sizeBytes += node.sizeBytes;
             if (!node.isIgnored) {
               stats[currentPath].total += 1;
               if (node.isSelected) {
