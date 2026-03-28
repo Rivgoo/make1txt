@@ -1,4 +1,3 @@
-// src/core/i18n/uk.ts
 export const uk = {
   common: {
     cancel: 'Скасувати',
@@ -43,6 +42,17 @@ export const uk = {
     tabResult: 'Результат',
     files: 'Файли',
     searchPlaceholder: 'Пошук файлів...',
+    sorting: 'Сортування',
+    sortBy: 'Сортувати за',
+    sortDir: 'Порядок',
+    sortFolders: 'Сортувати папки разом із файлами',
+    sortRegex: 'Regex пріоритет (збіги зверху)',
+    sortNone: 'Вимкнено',
+    sortName: 'Назвою',
+    sortSize: 'Розміром',
+    sortTokens: 'Токенами',
+    sortAsc: 'За зростанням',
+    sortDesc: 'За спаданням',
     emptyStructureTitle: 'Структура файлів порожня',
     emptyStructureDesc: 'Оберіть директорію для початку роботи з вашим кодом.',
     selectFolder: 'Обрати папку',

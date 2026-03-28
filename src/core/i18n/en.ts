@@ -1,4 +1,3 @@
-// src/core/i18n/en.ts
 export const en = {
   common: {
     cancel: 'Cancel',
@@ -43,6 +42,17 @@ export const en = {
     tabResult: 'Result',
     files: 'Files',
     searchPlaceholder: 'Search files...',
+    sorting: 'Sorting',
+    sortBy: 'Sort By',
+    sortDir: 'Direction',
+    sortFolders: 'Include folders in sorting',
+    sortRegex: 'Regex priority (matches first)',
+    sortNone: 'None',
+    sortName: 'Name',
+    sortSize: 'Size',
+    sortTokens: 'Tokens',
+    sortAsc: 'Ascending',
+    sortDesc: 'Descending',
     emptyStructureTitle: 'File structure is empty',
     emptyStructureDesc: 'Select a directory to start working with your codebase.',
     selectFolder: 'Select Folder',

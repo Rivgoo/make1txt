@@ -110,9 +110,15 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
     }
   }
 
-  const byteSize = node.isDirectory ? (folderStat?.sizeBytes || 0) : node.sizeBytes;
-  const tokensCount = estimateTokenCount(byteSize);
+  const totalBytes = node.isDirectory ? (folderStat?.sizeBytes || 0) : node.sizeBytes;
+  const selectedBytes = node.isDirectory 
+    ? (folderStat?.selectedSizeBytes || 0) 
+    : (node.isSelected && !node.isIgnored ? node.sizeBytes : 0);
 
+  const totalTokens = estimateTokenCount(totalBytes);
+  const selectedTokens = estimateTokenCount(selectedBytes);
+
+  const isFullySelected = totalBytes === selectedBytes;
   const nodeClass = `tree-node ${isIgnoredVisually ? 'tree-node--ignored' : ''} ${isUnselected && !isIgnoredVisually ? 'tree-node--unselected' : ''}`;
 
   return (
@@ -189,13 +195,20 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
 
       <div className="tree-node-leader" />
 
-      <span 
+      <div 
         className="tree-node-tokens" 
         data-tooltip={t('stats.tokens')}
         data-tooltip-pos="top"
       >
-        ~{tokensCount.toLocaleString()}
-      </span>
+        {isFullySelected ? (
+          <span className="tree-node-tokens-selected">~{totalTokens.toLocaleString()}</span>
+        ) : (
+          <>
+            <span className="tree-node-tokens-selected">~{selectedTokens.toLocaleString()}</span>
+            <span className="tree-node-tokens-total">/ ~{totalTokens.toLocaleString()}</span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

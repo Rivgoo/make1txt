@@ -2,10 +2,15 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconFolderOpen, IconLoader2, IconSearch, IconFileOff, 
-  IconListTree, IconCode, IconChecks, IconSquareX, IconFiles, IconSquareRoundedX
+  IconListTree, IconCode, IconChecks, IconSquareX, IconFiles, 
+  IconSquareRoundedX, IconArrowsSort, IconAbc, IconWeight, 
+  IconCpu, IconBan, IconSortAscendingLetters, IconSortDescendingLetters, 
+  IconCodeAsterix, IconFilter, IconFolders
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { VirtualList } from '@/shared/ui/VirtualList/VirtualList';
+import { Select } from '@/shared/ui/Select/Select';
+import type { SelectOption } from '@/shared/ui/Select/Select';
 import { FileTreeNode } from './components/FileTreeNode';
 import type { FolderStat } from '@/store/useFileStore';
 import { FileContextMenu } from './components/FileContextMenu';
@@ -26,8 +31,16 @@ interface ContextMenuState {
 
 export function FileBrowser() {
   const { t } = useTranslation();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [isSortVisible, setIsSortVisible] = useState(false);
+  
+  const [sortBy, setSortBy] = useState<'none' | 'name' | 'size' | 'tokens'>('tokens');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [sortFolders, setSortFolders] = useState(true);
+  const [sortRegex, setSortRegex] = useState('');
+
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({ isOpen: false, x: 0, y: 0, node: null });
   
   const [previewHeight, setPreviewHeight] = useState(400);
@@ -107,7 +120,13 @@ export function FileBrowser() {
 
   const toggleSearch = () => {
     setIsSearchVisible(!isSearchVisible);
+    if (isSortVisible) setIsSortVisible(false);
     if (isSearchVisible) setSearchTerm('');
+  };
+
+  const toggleSort = () => {
+    setIsSortVisible(!isSortVisible);
+    if (isSearchVisible) setIsSearchVisible(false);
   };
 
   const handleContextMenu = (e: React.MouseEvent, node: FileNode) => {
@@ -123,7 +142,13 @@ export function FileBrowser() {
 
     for (const node of nodes) {
       if (node.isDirectory) {
-        stats[node.relativePath] = { total: 0, selected: 0, absoluteTotal: 0, sizeBytes: 0 };
+        stats[node.relativePath] = { 
+          total: 0, 
+          selected: 0, 
+          absoluteTotal: 0, 
+          sizeBytes: 0, 
+          selectedSizeBytes: 0 
+        };
       }
     }
 
@@ -142,6 +167,7 @@ export function FileBrowser() {
               stats[currentPath].total += 1;
               if (node.isSelected) {
                 stats[currentPath].selected += 1;
+                stats[currentPath].selectedSizeBytes += node.sizeBytes;
               }
             }
           }
@@ -152,43 +178,112 @@ export function FileBrowser() {
     return stats;
   }, [nodes]);
 
-  const visibleNodes = useMemo(() => {
-    const filteredNodes = localFilters.showIgnored ? nodes : nodes.filter(n => !n.isIgnored);
+  const sortedAndFilteredNodes = useMemo(() => {
+    const baseFiltered = localFilters.showIgnored ? nodes : nodes.filter(n => !n.isIgnored);
 
-    if (!searchTerm.trim()) {
-      const visible = [];
-      const hiddenPaths = new Set<string>();
+    let finalNodes = baseFiltered;
+    if (searchTerm.trim()) {
+      const lowerSearch = searchTerm.toLowerCase();
+      const matchedNodes = new Set<string>();
 
-      for (const node of filteredNodes) {
-        if (node.parentId && hiddenPaths.has(node.parentId)) {
-          hiddenPaths.add(node.id);
+      for (const node of baseFiltered) {
+        if (node.name.toLowerCase().includes(lowerSearch)) {
+          matchedNodes.add(node.id);
+          let currentParent = node.parentId;
+          while (currentParent) {
+            matchedNodes.add(currentParent);
+            const parentNode = baseFiltered.find(n => n.id === currentParent);
+            currentParent = parentNode ? parentNode.parentId : null;
+          }
+        }
+      }
+      finalNodes = baseFiltered.filter(node => matchedNodes.has(node.id));
+    }
+
+    const childrenMap = new Map<string | null, FileNode[]>();
+    for (const node of finalNodes) {
+      const pId = node.parentId;
+      if (!childrenMap.has(pId)) childrenMap.set(pId, []);
+      childrenMap.get(pId)!.push(node);
+    }
+
+    let validRegex: RegExp | null = null;
+    if (sortRegex.trim()) {
+      try { 
+        validRegex = new RegExp(sortRegex.trim(), 'i'); 
+      } catch {
+        validRegex = null;
+      }
+    }
+
+    for (const children of childrenMap.values()) {
+      children.sort((a, b) => {
+        if (validRegex) {
+          const aMatch = validRegex.test(a.relativePath);
+          const bMatch = validRegex.test(b.relativePath);
+          if (aMatch && !bMatch) return -1;
+          if (!aMatch && bMatch) return 1;
+        }
+
+        if (!sortFolders) {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+        }
+
+        if (sortBy === 'none') {
+          if (a.isDirectory && !b.isDirectory) return -1;
+          if (!a.isDirectory && b.isDirectory) return 1;
+          return a.name.localeCompare(b.name);
+        }
+
+        let result = 0;
+        if (sortBy === 'name') {
+          result = a.name.localeCompare(b.name);
+        } else {
+          const valA = a.isDirectory ? (folderStats[a.relativePath]?.sizeBytes || 0) : a.sizeBytes;
+          const valB = b.isDirectory ? (folderStats[b.relativePath]?.sizeBytes || 0) : b.sizeBytes;
+          result = valA - valB;
+          if (result === 0) result = a.name.localeCompare(b.name);
+        }
+
+        return sortDir === 'asc' ? result : -result;
+      });
+    }
+
+    const result: FileNode[] = [];
+    const hiddenPaths = new Set<string>();
+
+    function traverse(parentId: string | null) {
+      const children = childrenMap.get(parentId) || [];
+      for (const child of children) {
+        if (child.parentId && hiddenPaths.has(child.parentId)) {
+          hiddenPaths.add(child.id);
           continue;
         }
-        visible.push(node);
-        if (node.isDirectory && !node.isExpanded) {
-          hiddenPaths.add(node.id);
+        result.push(child);
+        if (child.isDirectory && !child.isExpanded) {
+          hiddenPaths.add(child.id);
         }
-      }
-      return visible;
-    }
-
-    const lowerSearch = searchTerm.toLowerCase();
-    const matchedNodes = new Set<string>();
-
-    for (const node of filteredNodes) {
-      if (node.name.toLowerCase().includes(lowerSearch)) {
-        matchedNodes.add(node.id);
-        let currentParent = node.parentId;
-        while (currentParent) {
-          matchedNodes.add(currentParent);
-          const parentNode = filteredNodes.find(n => n.id === currentParent);
-          currentParent = parentNode ? parentNode.parentId : null;
-        }
+        traverse(child.id);
       }
     }
 
-    return filteredNodes.filter(node => matchedNodes.has(node.id));
-  }, [nodes, searchTerm, localFilters.showIgnored]);
+    traverse(null);
+    return result;
+
+  }, [nodes, searchTerm, localFilters.showIgnored, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
+
+  const sortByOptions: SelectOption[] = [
+    { value: 'none', label: t('browser.sortNone'), icon: <IconBan size={16} /> },
+    { value: 'name', label: t('browser.sortName'), icon: <IconAbc size={16} /> },
+    { value: 'size', label: t('browser.sortSize'), icon: <IconWeight size={16} /> },
+    { value: 'tokens', label: t('browser.sortTokens'), icon: <IconCpu size={16} /> },
+  ];
+
+  const sortDirOptions: SelectOption[] = [
+    { value: 'asc', label: t('browser.sortAsc'), icon: <IconSortAscendingLetters size={16} /> },
+    { value: 'desc', label: t('browser.sortDesc'), icon: <IconSortDescendingLetters size={16} /> },
+  ];
 
   return (
     <section className="panel-left" style={{ position: 'relative' }}>
@@ -240,6 +335,9 @@ export function FileBrowser() {
               
               {nodes.length > 0 && (
                 <div className="browser-header-tools">
+                  <Button variant="secondary" onClick={toggleSort} data-tooltip={t('browser.sorting')} data-tooltip-pos="bottom">
+                    <IconArrowsSort size={18} color={isSortVisible ? 'var(--accent-primary)' : 'var(--text-primary)'} />
+                  </Button>
                   <Button variant="secondary" onClick={toggleSearch} data-tooltip={t('common.search')} data-tooltip-pos="bottom">
                     <IconSearch size={18} color={isSearchVisible ? 'var(--accent-primary)' : 'var(--text-primary)'} />
                   </Button>
@@ -256,16 +354,62 @@ export function FileBrowser() {
               )}
             </div>
             
-            <div className={`search-container-slide ${isSearchVisible && nodes.length > 0 ? 'visible' : ''}`}>
-              <div className="search-input-wrapper">
-                <IconSearch size={16} className="search-input-icon" color="var(--text-primary)" />
-                <input 
-                  className="search-input" 
-                  placeholder={t('browser.searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
+            <div className={`tools-panel-slide ${(isSearchVisible || isSortVisible) && nodes.length > 0 ? 'visible' : ''}`}>
+              {isSearchVisible && (
+                <div className="search-input-wrapper">
+                  <IconSearch size={16} className="search-input-icon" color="var(--text-primary)" />
+                  <input 
+                    className="search-input" 
+                    placeholder={t('browser.searchPlaceholder')}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              )}
+              {isSortVisible && (
+                <div className="sort-controls-wrapper">
+                  <div className="sort-control-group">
+                    <label><IconFilter size={14} /> {t('browser.sortBy')}</label>
+                    <Select 
+                      options={sortByOptions} 
+                      value={sortBy} 
+                      onChange={(v) => setSortBy(v as 'none' | 'name' | 'size' | 'tokens')} 
+                    />
+                  </div>
+                  <div className="sort-control-group">
+                    <label><IconArrowsSort size={14} /> {t('browser.sortDir')}</label>
+                    <Select 
+                      options={sortDirOptions} 
+                      value={sortDir} 
+                      onChange={(v) => setSortDir(v as 'asc' | 'desc')} 
+                    />
+                  </div>
+                  <div className="sort-control-group">
+                    <label><IconCodeAsterix size={14} /> {t('browser.sortRegex')}</label>
+                    <div className="sort-regex-wrapper">
+                      <IconCodeAsterix size={16} className="sort-regex-icon" />
+                      <input 
+                        className="search-input" 
+                        placeholder="^src/.*"
+                        value={sortRegex} 
+                        onChange={e => setSortRegex(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                  <div className="sort-control-group" style={{ justifyContent: 'flex-end' }}>
+                    <label className={`sort-checkbox-card ${sortFolders ? 'is-active' : ''}`}>
+                      <IconFolders size={18} className="sort-checkbox-icon" />
+                      <span className="sort-checkbox-label">{t('browser.sortFolders')}</span>
+                      <input 
+                        type="checkbox" 
+                        checked={sortFolders} 
+                        onChange={e => setSortFolders(e.target.checked)} 
+                        className="sort-checkbox-input"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
           </header>
           
@@ -282,16 +426,16 @@ export function FileBrowser() {
               </div>
             )}
 
-            {nodes.length > 0 && visibleNodes.length === 0 && !isLoading && (
+            {nodes.length > 0 && sortedAndFilteredNodes.length === 0 && !isLoading && (
               <div className="empty-state">
                 <IconFileOff size={48} stroke={1.5} />
                 <p>{t('browser.notFound')}</p>
               </div>
             )}
             
-            {visibleNodes.length > 0 && (
+            {sortedAndFilteredNodes.length > 0 && (
               <VirtualList
-                items={visibleNodes}
+                items={sortedAndFilteredNodes}
                 itemHeight={24}
                 renderItem={(node) => (
                   <FileTreeNode

@@ -10,6 +10,7 @@ export interface FolderStat {
   selected: number;
   absoluteTotal: number;
   sizeBytes: number;
+  selectedSizeBytes: number;
 }
 
 export const DEFAULT_TREE_SYMBOLS = {

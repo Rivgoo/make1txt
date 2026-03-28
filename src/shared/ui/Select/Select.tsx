@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { IconChevronDown } from '@tabler/icons-react';
 import './Select.css';
 
 export interface SelectOption {
   value: string;
   label: string;
+  icon?: ReactNode;
 }
 
 interface SelectProps {
@@ -44,7 +46,10 @@ export function Select({ options, value, onChange, className = '' }: SelectProps
       ref={containerRef}
     >
       <div className="custom-select-trigger" onClick={() => setIsOpen(!isOpen)}>
-        <span>{selectedOption?.label}</span>
+        <div className="custom-select-trigger-content">
+          {selectedOption?.icon && <span className="custom-select-opt-icon">{selectedOption.icon}</span>}
+          <span>{selectedOption?.label}</span>
+        </div>
         <IconChevronDown size={16} className="custom-select-icon" />
       </div>
       
@@ -56,7 +61,8 @@ export function Select({ options, value, onChange, className = '' }: SelectProps
               className={`custom-select-option ${option.value === value ? 'is-selected' : ''}`}
               onClick={() => handleSelect(option.value)}
             >
-              {option.label}
+              {option.icon && <span className="custom-select-opt-icon">{option.icon}</span>}
+              <span>{option.label}</span>
             </div>
           ))}
         </div>
