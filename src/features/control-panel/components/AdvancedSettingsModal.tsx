@@ -113,7 +113,8 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
 
   const treePreviewRaw = generateTextTree(MOCK_TREE_NODES as FileNode[], {
     includeIgnored: true,
-    symbols: local.treeSymbols
+    symbols: local.treeSymbols,
+    showEmptyFolders: true
   });
   
   const treePreviewText = local.treeWrapper.replace('{{tree}}', treePreviewRaw);
