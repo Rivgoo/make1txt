@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconBrandGit, IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
-  IconChecks, IconSquareX, IconEye, IconBinaryTree
+  IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -150,10 +150,18 @@ export function QuickSettings() {
         </div>
 
         <div 
-          className={`toggle-row ${localFilters.showIgnored ? 'active' : ''}`}
-          onClick={() => updateLocalFilters({ showIgnored: !localFilters.showIgnored })}
+          className={`toggle-row ${localFilters.showGloballyIgnored ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ showGloballyIgnored: !localFilters.showGloballyIgnored })}
         >
-          <span className="qs-title"><IconEye size={16}/> {t('quickSettings.showIgnored')}</span>
+          <span className="qs-title"><IconWorld size={16}/> {t('quickSettings.showGloballyIgnored')}</span>
+          <div className="toggle-switch" />
+        </div>
+
+        <div 
+          className={`toggle-row ${localFilters.showLocallyIgnored ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ showLocallyIgnored: !localFilters.showLocallyIgnored })}
+        >
+          <span className="qs-title"><IconMapPin size={16}/> {t('quickSettings.showLocallyIgnored')}</span>
           <div className="toggle-switch" />
         </div>
       </div>
@@ -171,7 +179,7 @@ export function QuickSettings() {
           className={`toggle-row ${!localFilters.generateTree ? 'disabled' : (localFilters.treeIncludeIgnored ? 'active' : '')}`}
           onClick={() => localFilters.generateTree && updateLocalFilters({ treeIncludeIgnored: !localFilters.treeIncludeIgnored })}
         >
-          <span className="qs-title"><IconFilter size={16}/> {t('quickSettings.structureIncludeIgnored')}</span>
+          <span className="qs-title"><IconEye size={16}/> {t('quickSettings.structureIncludeIgnored')}</span>
           <div className="toggle-switch" />
         </div>
       </div>

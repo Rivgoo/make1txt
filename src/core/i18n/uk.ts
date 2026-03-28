@@ -156,7 +156,8 @@ export const uk = {
     ruleRejected: 'Вираз відхилено.',
     useGitignore: 'Враховувати .gitignore',
     noGitignore: 'Файл .gitignore не знайдено',
-    showIgnored: 'Показати ігноровані файли',
+    showGloballyIgnored: 'Показати глобально ігноровані',
+    showLocallyIgnored: 'Показати локально ігноровані',
     generateStructure: 'Генерувати структуру файлів',
     structureIncludeIgnored: 'Структура: включати ігноровані'
   },

@@ -179,7 +179,11 @@ export function FileBrowser() {
   }, [nodes]);
 
   const sortedAndFilteredNodes = useMemo(() => {
-    const baseFiltered = localFilters.showIgnored ? nodes : nodes.filter(n => !n.isIgnored);
+    const baseFiltered = nodes.filter(n => {
+      if (n.isGloballyIgnored && !localFilters.showGloballyIgnored) return false;
+      if (n.isLocallyIgnored && !localFilters.showLocallyIgnored) return false;
+      return true;
+    });
 
     let finalNodes = baseFiltered;
     if (searchTerm.trim()) {
@@ -271,7 +275,7 @@ export function FileBrowser() {
     traverse(null);
     return result;
 
-  }, [nodes, searchTerm, localFilters.showIgnored, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
+  }, [nodes, searchTerm, localFilters.showGloballyIgnored, localFilters.showLocallyIgnored, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
 
   const sortByOptions: SelectOption[] = [
     { value: 'none', label: t('browser.sortNone'), icon: <IconBan size={16} /> },

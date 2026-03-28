@@ -86,6 +86,8 @@ export async function readDirectoryRecursively(
         parentId,
         isSelected: true,
         isIgnored: false,
+        isGloballyIgnored: false,
+        isLocallyIgnored: false,
         isExpanded: false,
       });
 
@@ -115,6 +117,8 @@ export async function readDirectoryRecursively(
         parentId,
         isSelected: true,
         isIgnored: false,
+        isGloballyIgnored: false,
+        isLocallyIgnored: false,
         isExpanded: false,
       });
     }

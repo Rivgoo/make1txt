@@ -156,7 +156,8 @@ export const en = {
     ruleRejected: 'Expression rejected.',
     useGitignore: 'Respect .gitignore',
     noGitignore: '.gitignore file not found',
-    showIgnored: 'Show ignored files',
+    showGloballyIgnored: 'Show globally ignored',
+    showLocallyIgnored: 'Show locally ignored',
     generateStructure: 'Generate file structure',
     structureIncludeIgnored: 'Structure: include ignored'
   },

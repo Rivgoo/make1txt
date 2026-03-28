@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { FileNode, GeneratorStats, Profile, GlobalSettings, LocalFilters, ExtensionStat } from '@/core/types/file.types';
+import type { FileNode, GeneratorStats, Profile, GlobalSettings, LocalFilters, ExtensionStat, SavedLocalFilters } from '@/core/types/file.types';
 import { requestDirectoryAccess, readDirectoryRecursively, verifyDirectoryPermission } from '@/core/services/FileSystemService';
 import { createIgnoreRegexes, isPathGloballyIgnored, compileGlobToRegex, DEFAULT_IGNORED_DIRECTORIES, DEFAULT_IGNORED_EXTENSIONS } from '@/core/services/IgnoreService';
 import { estimateTokenCount, getFileExtension } from '@/core/utils/stats.utils';
@@ -120,35 +120,54 @@ export const useFileStore = create<FileStore>((set, get) => {
   ): FileNode[] => {
     const { globalSettings, localFilters, gitignoreRegexes, compiledCustomRegexes } = state;
     
-    return state.nodes.map(node => {
-      let isIgnored = false;
+    const globallyIgnoredDirIds = new Set<string>();
+    const locallyIgnoredDirIds = new Set<string>();
 
-      if (isPathGloballyIgnored(node.relativePath, globalSettings.ignoredPaths)) {
-        isIgnored = true;
+    return state.nodes.map(node => {
+      let isGloballyIgnored = false;
+      let isLocallyIgnored = false;
+
+      if (node.parentId) {
+        if (globallyIgnoredDirIds.has(node.parentId)) isGloballyIgnored = true;
+        if (locallyIgnoredDirIds.has(node.parentId)) isLocallyIgnored = true;
       }
-      if (!node.isDirectory && globalSettings.maxFileSizeKb > 0 && node.sizeBytes > globalSettings.maxFileSizeKb * 1024) {
-        isIgnored = true;
+
+      if (!isGloballyIgnored) {
+        if (isPathGloballyIgnored(node.relativePath, globalSettings.ignoredPaths)) {
+          isGloballyIgnored = true;
+        }
+        if (!node.isDirectory && globalSettings.maxFileSizeKb > 0 && node.sizeBytes > globalSettings.maxFileSizeKb * 1024) {
+          isGloballyIgnored = true;
+        }
+        if (!node.isDirectory && globalSettings.ignoredExtensions.includes(getFileExtension(node.name))) {
+          isGloballyIgnored = true;
+        }
       }
-      if (!isIgnored && localFilters.useGitignore && gitignoreRegexes.some(rx => rx.test(node.relativePath))) {
-        isIgnored = true;
-      }
-      if (!isIgnored && compiledCustomRegexes.some(rx => rx.test(node.relativePath))) {
-        isIgnored = true;
-      }
-      
-      if (!isIgnored && !node.isDirectory) {
-        const ext = getFileExtension(node.name);
-        if (globalSettings.ignoredExtensions.includes(ext)) {
-          isIgnored = true;
-        } else {
+
+      if (!isLocallyIgnored) {
+        if (localFilters.useGitignore && gitignoreRegexes.some(rx => rx.test(node.relativePath))) {
+          isLocallyIgnored = true;
+        }
+        if (compiledCustomRegexes.some(rx => rx.test(node.relativePath))) {
+          isLocallyIgnored = true;
+        }
+        if (!node.isDirectory) {
+          const ext = getFileExtension(node.name);
           const extStat = localFilters.extensions[ext];
           if (extStat && !extStat.isActive) {
-            isIgnored = true;
+            isLocallyIgnored = true;
           }
         }
       }
 
+      if (node.isDirectory) {
+        if (isGloballyIgnored) globallyIgnoredDirIds.add(node.id);
+        if (isLocallyIgnored) locallyIgnoredDirIds.add(node.id);
+      }
+
+      const isIgnored = isGloballyIgnored || isLocallyIgnored;
       let isSelected = node.isSelected;
+      
       if (isIgnored) {
         isSelected = false;
       } else if (!node.isDirectory) {
@@ -160,7 +179,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         }
       }
 
-      return { ...node, isIgnored, isSelected };
+      return { ...node, isGloballyIgnored, isLocallyIgnored, isIgnored, isSelected };
     });
   };
 
@@ -185,7 +204,8 @@ export const useFileStore = create<FileStore>((set, get) => {
       customPatterns: [], 
       useGitignore: true, 
       hasGitignore: false, 
-      showIgnored: true,
+      showGloballyIgnored: false,
+      showLocallyIgnored: true,
       generateTree: true,
       treeIncludeIgnored: false
     },
@@ -251,6 +271,8 @@ export const useFileStore = create<FileStore>((set, get) => {
           parentId: null,
           isSelected: true,
           isIgnored: false,
+          isGloballyIgnored: false,
+          isLocallyIgnored: false,
           isExpanded: true,
         };
 
@@ -277,11 +299,24 @@ export const useFileStore = create<FileStore>((set, get) => {
         }
 
         const extMap = buildExtMap(rawNodes, activeGlobalSettings, {});
-
+        
+        let localFiltersToApply: Partial<LocalFilters> = {};
         if (applyProfile) {
-          Object.keys(extMap).forEach(ext => {
-            extMap[ext].isActive = !applyProfile.localFilters.hiddenExtensions.includes(ext);
-          });
+            const savedFilters = applyProfile.localFilters;
+            const oldFormatFilters = savedFilters as Partial<SavedLocalFilters> & { showIgnored?: boolean };
+
+            Object.keys(extMap).forEach(ext => {
+                extMap[ext].isActive = !savedFilters.hiddenExtensions.includes(ext);
+            });
+
+            localFiltersToApply = {
+                customPatterns: savedFilters.customPatterns,
+                useGitignore: savedFilters.useGitignore,
+                showGloballyIgnored: savedFilters.showGloballyIgnored ?? oldFormatFilters.showIgnored ?? false,
+                showLocallyIgnored: savedFilters.showLocallyIgnored ?? true,
+                generateTree: savedFilters.generateTree ?? true,
+                treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false,
+            };
         }
 
         const initialState = { 
@@ -291,12 +326,13 @@ export const useFileStore = create<FileStore>((set, get) => {
           isRestoredFromProfile: isRestored,
           localFilters: {
             extensions: extMap,
-            customPatterns: applyProfile ? applyProfile.localFilters.customPatterns : [],
-            useGitignore: applyProfile ? applyProfile.localFilters.useGitignore : (hasGitignore && activeGlobalSettings.useGitignoreDefault),
+            customPatterns: localFiltersToApply.customPatterns ?? [],
+            useGitignore: localFiltersToApply.useGitignore ?? (hasGitignore && activeGlobalSettings.useGitignoreDefault),
             hasGitignore,
-            showIgnored: applyProfile ? (applyProfile.localFilters.showIgnored ?? true) : true,
-            generateTree: applyProfile ? (applyProfile.localFilters.generateTree ?? true) : true,
-            treeIncludeIgnored: applyProfile ? (applyProfile.localFilters.treeIncludeIgnored ?? false) : false,
+            showGloballyIgnored: localFiltersToApply.showGloballyIgnored ?? false,
+            showLocallyIgnored: localFiltersToApply.showLocallyIgnored ?? true,
+            generateTree: localFiltersToApply.generateTree ?? true,
+            treeIncludeIgnored: localFiltersToApply.treeIncludeIgnored ?? false,
           },
           nodes: rawNodes,
           isLoading: false,
@@ -543,7 +579,8 @@ export const useFileStore = create<FileStore>((set, get) => {
           hiddenExtensions,
           customPatterns: localFilters.customPatterns,
           useGitignore: localFilters.useGitignore,
-          showIgnored: localFilters.showIgnored,
+          showGloballyIgnored: localFilters.showGloballyIgnored,
+          showLocallyIgnored: localFilters.showLocallyIgnored,
           generateTree: localFilters.generateTree,
           treeIncludeIgnored: localFilters.treeIncludeIgnored
         }
@@ -568,15 +605,19 @@ export const useFileStore = create<FileStore>((set, get) => {
           Object.keys(newExts).forEach(ext => {
             newExts[ext] = { ...newExts[ext], isActive: !profile.localFilters.hiddenExtensions.includes(ext) };
           });
+          
+          const savedFilters = profile.localFilters;
+          const oldFormatFilters = savedFilters as Partial<SavedLocalFilters> & { showIgnored?: boolean };
 
           const newLocalFilters = {
             ...state.localFilters,
             extensions: newExts,
-            customPatterns: profile.localFilters.customPatterns,
-            useGitignore: profile.localFilters.useGitignore,
-            showIgnored: profile.localFilters.showIgnored ?? true,
-            generateTree: profile.localFilters.generateTree ?? true,
-            treeIncludeIgnored: profile.localFilters.treeIncludeIgnored ?? false
+            customPatterns: savedFilters.customPatterns,
+            useGitignore: savedFilters.useGitignore,
+            showGloballyIgnored: savedFilters.showGloballyIgnored ?? oldFormatFilters.showIgnored ?? false,
+            showLocallyIgnored: savedFilters.showLocallyIgnored ?? true,
+            generateTree: savedFilters.generateTree ?? true,
+            treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false
           };
 
           const tempState = { ...state, globalSettings: profile.settings, localFilters: newLocalFilters };

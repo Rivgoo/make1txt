@@ -14,6 +14,8 @@ export interface FileNode {
   parentId: string | null;
   isSelected: boolean;
   isIgnored: boolean;
+  isGloballyIgnored: boolean;
+  isLocallyIgnored: boolean;
   isExpanded: boolean;
 }
 
@@ -62,7 +64,8 @@ export interface LocalFilters {
   customPatterns: CustomPattern[];
   useGitignore: boolean;
   hasGitignore: boolean;
-  showIgnored: boolean;
+  showGloballyIgnored: boolean;
+  showLocallyIgnored: boolean;
   generateTree: boolean;
   treeIncludeIgnored: boolean;
 }
@@ -71,7 +74,8 @@ export interface SavedLocalFilters {
   hiddenExtensions: string[];
   customPatterns: CustomPattern[];
   useGitignore: boolean;
-  showIgnored: boolean;
+  showGloballyIgnored: boolean;
+  showLocallyIgnored: boolean;
   generateTree: boolean;
   treeIncludeIgnored: boolean;
 }

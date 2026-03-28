@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconRestore, IconDatabase, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree, IconLanguage } from '@tabler/icons-react';
+import { 
+  IconRestore, IconDatabase, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree, 
+  IconLanguage, IconLayoutNavbar, IconLayoutBottombar 
+} from '@tabler/icons-react';
 import { Modal } from '@/shared/ui/Modal/Modal';
 import { Button } from '@/shared/ui/Button/Button';
 import { Select } from '@/shared/ui/Select/Select';
@@ -116,14 +119,14 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
   const treePreviewText = local.treeWrapper.replace('{{tree}}', treePreviewRaw);
 
   const placementOptions = [
-    { value: 'top', label: t('settings.labels.placementTop') },
-    { value: 'bottom', label: t('settings.labels.placementBottom') }
+    { value: 'top', label: t('settings.labels.placementTop'), icon: <IconLayoutNavbar size={16}/> },
+    { value: 'bottom', label: t('settings.labels.placementBottom'), icon: <IconLayoutBottombar size={16}/> }
   ];
 
   const languageOptions = [
-    { value: 'auto', label: t('settings.langAuto') },
-    { value: 'en', label: t('settings.langEn') },
-    { value: 'uk', label: t('settings.langUk') }
+    { value: 'auto', label: t('settings.langAuto'), icon: <IconLanguage size={16}/> },
+    { value: 'en', label: t('settings.langEn'), icon: <IconLanguage size={16}/> },
+    { value: 'uk', label: t('settings.langUk'), icon: <IconLanguage size={16}/> }
   ];
 
   return (
