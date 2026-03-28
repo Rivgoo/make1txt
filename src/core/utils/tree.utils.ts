@@ -8,7 +8,10 @@ interface TreeOptions {
 export function generateTextTree(nodes: FileNode[], options: TreeOptions): string {
   const { includeIgnored, symbols } = options;
   
-  const validNodes = includeIgnored ? nodes : nodes.filter(n => !n.isIgnored);
+  const validNodes = includeIgnored 
+    ? nodes 
+    : nodes.filter(n => n.isSelected && !n.isIgnored);
+    
   if (validNodes.length === 0) return '';
 
   const childrenMap = new Map<string | null, FileNode[]>();
@@ -40,10 +43,11 @@ export function generateTextTree(nodes: FileNode[], options: TreeOptions): strin
       const isLast = i === children.length - 1;
       
       const suffix = child.isDirectory ? '/' : '';
-      const ignoredMark = child.isIgnored ? symbols.ignoredSuffix : '';
+      
+      const isSkipped = child.isIgnored || !child.isSelected;
+      const ignoredMark = isSkipped ? symbols.ignoredSuffix : '';
       
       if (isAbsoluteRoot) {
-        // Коренева папка не має ліній-відгалужень
         output += `${child.name}${suffix}${ignoredMark}\n`;
         if (child.isDirectory) {
           traverse(child.id, prefix);
