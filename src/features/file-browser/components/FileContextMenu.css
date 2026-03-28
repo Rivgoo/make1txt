@@ -1,4 +1,3 @@
-/* src/features/file-browser/components/FileContextMenu.css */
 .context-menu-overlay {
   position: fixed;
   top: 0;
@@ -14,10 +13,10 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-  min-width: 280px;
+  min-width: 550px; /* Wider for 2 columns */
+  max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
-  padding: var(--spacing-xs);
   display: flex;
   flex-direction: column;
   z-index: 10000;
@@ -25,12 +24,11 @@
 }
 
 .context-menu-header {
-  padding: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: var(--spacing-xs);
   position: sticky;
   top: 0;
   background-color: var(--bg-panel);
@@ -76,14 +74,39 @@
   color: var(--text-primary);
 }
 
+.context-menu-layout {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  align-items: stretch;
+}
+
+.context-menu-actions-col {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.context-menu-meta-col {
+  width: 280px;
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  height: fit-content;
+}
+
 .context-menu-section-title {
   font-size: 0.7rem;
   text-transform: uppercase;
   color: var(--text-muted);
   font-weight: 600;
   letter-spacing: 0.5px;
-  padding: var(--spacing-sm) var(--spacing-sm) 2px;
-  margin-top: var(--spacing-xs);
+  padding: 0 var(--spacing-sm) 4px;
 }
 
 .context-menu-action {
@@ -124,17 +147,7 @@
 .context-menu-divider {
   height: 1px;
   background-color: var(--border-color);
-  margin: var(--spacing-xs) 0;
-}
-
-.context-menu-meta {
-  padding: var(--spacing-sm);
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  background-color: var(--bg-root);
-  border-radius: var(--radius-sm);
-  margin-top: var(--spacing-xs);
+  margin: var(--spacing-sm) 0;
 }
 
 .meta-row {
@@ -171,4 +184,16 @@
 @keyframes menuFadeIn {
   from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 600px) {
+  .context-menu {
+    min-width: 90vw;
+  }
+  .context-menu-layout {
+    flex-direction: column;
+  }
+  .context-menu-meta-col {
+    width: 100%;
+  }
 }

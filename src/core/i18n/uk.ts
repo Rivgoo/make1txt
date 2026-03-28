@@ -1,3 +1,4 @@
+// src/core/i18n/uk.ts
 export const uk = {
   common: {
     cancel: 'Скасувати',
@@ -62,7 +63,9 @@ export const uk = {
     deselect: 'Зняти виділення',
     localFilters: 'Локальні фільтри (сеанс)',
     ignoreFolder: 'Ігнорувати папку',
+    unignoreFolder: 'Повернути папку',
     ignoreFile: 'Ігнорувати файл',
+    unignoreFile: 'Повернути файл',
     includeExt: 'Включити розширення',
     ignoreExt: 'Ігнорувати розширення',
     globalRules: 'Глобальні правила (назавжди)',
@@ -138,6 +141,7 @@ export const uk = {
     placeholder: 'Напр. *.spec.ts, /tests/',
     invalidPattern: 'Вираз містить синтаксичну помилку.',
     ruleAdded: 'Шлях "{{pattern}}" додано до ігнорування.',
+    ruleRemoved: 'Шлях "{{pattern}}" видалено з ігнорування.',
     ruleRejected: 'Вираз відхилено.',
     useGitignore: 'Враховувати .gitignore',
     noGitignore: 'Файл .gitignore не знайдено',

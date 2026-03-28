@@ -97,6 +97,7 @@ interface FileStore {
   toggleCustomPattern: (id: string) => void;
   removeCustomPattern: (id: string) => void;
   moveCustomPattern: (id: string, direction: 'up' | 'down') => void;
+  toggleLocalPathIgnore: (path: string) => void;
 
   toggleSelection: (id: string, checked: boolean) => void;
   toggleExpand: (id: string) => void;
@@ -425,6 +426,33 @@ export const useFileStore = create<FileStore>((set, get) => {
         else if (direction === 'down' && idx < patterns.length - 1) [patterns[idx + 1], patterns[idx]] = [patterns[idx], patterns[idx + 1]];
         const newFilters = { ...state.localFilters, customPatterns: patterns };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
+      });
+    },
+    
+    toggleLocalPathIgnore: (path) => {
+      set((state) => {
+        const pattern = path;
+        const exists = state.localFilters.customPatterns.find(p => p.pattern === pattern);
+        
+        if (exists) {
+          const newPatterns = state.localFilters.customPatterns.filter(p => p.pattern !== pattern);
+          const newFilters = { ...state.localFilters, customPatterns: newPatterns };
+          
+          const pathPrefix = `${path}/`;
+          const newNodes = state.nodes.map(n => {
+            if (n.relativePath === path || n.relativePath.startsWith(pathPrefix)) {
+              return { ...n, isSelected: true };
+            }
+            return n;
+          });
+          
+          const tempState = { ...state, nodes: newNodes, localFilters: newFilters };
+          return { localFilters: newFilters, ...recompileAndRecalculate(tempState as FileStore) };
+        } else {
+          const newPatterns = [...state.localFilters.customPatterns, { id: crypto.randomUUID(), pattern, isActive: true }];
+          const newFilters = { ...state.localFilters, customPatterns: newPatterns };
+          return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
+        }
       });
     },
 

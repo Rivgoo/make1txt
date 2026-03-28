@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, IconFileText } from '@tabler/icons-react';
+import { 
+  IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, 
+  IconFileText, IconInfoCircle, IconEye, IconMapPin, IconMapPinOff 
+} from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
+import { useFileStore } from '@/store/useFileStore';
 import { formatFileSize, estimateTokenCount } from '@/core/utils/stats.utils';
+import { useToast } from '@/shared/context/useToast';
 import './FileTreeNode.css';
 
 interface FileTreeNodeProps {
@@ -16,6 +21,8 @@ interface FileTreeNodeProps {
 
 export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect, onContextMenu }: FileTreeNodeProps) {
   const { t } = useTranslation();
+  const { localFilters, setPreviewNode, toggleLocalPathIgnore } = useFileStore();
+  const { showToast } = useToast();
   const paddingLeft = node.depth * 16 + 8;
   const checkboxRef = useRef<HTMLInputElement>(null);
 
@@ -24,10 +31,14 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
   const isChecked = node.isDirectory && folderStat && folderStat.total > 0 ? folderStat.selected === folderStat.total : node.isSelected;
   
   const isDisabled = node.isIgnored || isEffectivelyEmpty;
+  const isIgnoredVisually = node.isIgnored || isEffectivelyEmpty;
 
   const isUnselected = node.isDirectory 
     ? (folderStat && folderStat.total > 0 && folderStat.selected === 0)
     : !node.isSelected;
+
+  const localPatternCheck = node.relativePath;
+  const isLocallyIgnored = localFilters.customPatterns.some(p => p.pattern === localPatternCheck && p.isActive);
 
   useEffect(() => {
     if (checkboxRef.current) {
@@ -52,6 +63,22 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
   const handleRightClick = (e: React.MouseEvent) => {
     e.preventDefault();
     onContextMenu(e, node);
+  };
+
+  const handleToggleLocalIgnore = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleLocalPathIgnore(node.relativePath);
+    
+    if (isLocallyIgnored) {
+      showToast('info', t('browser.localFilters'), t('quickSettings.ruleRemoved').replace('{{pattern}}', localPatternCheck));
+    } else {
+      showToast('warning', t('browser.localFilters'), t('quickSettings.ruleAdded').replace('{{pattern}}', localPatternCheck));
+    }
+  };
+
+  const handlePreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPreviewNode(node);
   };
 
   let iconColor = "inherit";
@@ -86,7 +113,6 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
   const byteSize = node.isDirectory ? (folderStat?.sizeBytes || 0) : node.sizeBytes;
   const tokensCount = estimateTokenCount(byteSize);
 
-  const isIgnoredVisually = node.isIgnored || isEffectivelyEmpty;
   const nodeClass = `tree-node ${isIgnoredVisually ? 'tree-node--ignored' : ''} ${isUnselected && !isIgnoredVisually ? 'tree-node--unselected' : ''}`;
 
   return (
@@ -128,9 +154,46 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
         {metaContent}
       </span>
 
+      <div className="tree-node-actions">
+        <button 
+          className="tree-node-action-btn" 
+          data-tooltip={t('common.info')}
+          data-tooltip-pos="top"
+          onClick={(e) => { e.stopPropagation(); onContextMenu(e, node); }}
+        >
+          <IconInfoCircle size={14} />
+        </button>
+        
+        {!node.isDirectory && (
+          <button 
+            className="tree-node-action-btn" 
+            data-tooltip={t('browser.viewContent')}
+            data-tooltip-pos="top"
+            onClick={handlePreview}
+          >
+            <IconEye size={14} />
+          </button>
+        )}
+        
+        <div className="tree-node-actions-divider" />
+        
+        <button 
+          className={`tree-node-action-btn ${isLocallyIgnored ? 'active-ignore' : ''}`} 
+          data-tooltip={isLocallyIgnored ? (node.isDirectory ? t('browser.unignoreFolder') : t('browser.unignoreFile')) : (node.isDirectory ? t('browser.ignoreFolder') : t('browser.ignoreFile'))}
+          data-tooltip-pos="top"
+          onClick={handleToggleLocalIgnore}
+        >
+          {isLocallyIgnored ? <IconMapPinOff size={14} /> : <IconMapPin size={14} />}
+        </button>
+      </div>
+
       <div className="tree-node-leader" />
 
-      <span className="tree-node-tokens" title={t('stats.tokens')}>
+      <span 
+        className="tree-node-tokens" 
+        data-tooltip={t('stats.tokens')}
+        data-tooltip-pos="top"
+      >
         ~{tokensCount.toLocaleString()}
       </span>
     </div>

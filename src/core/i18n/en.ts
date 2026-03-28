@@ -1,3 +1,4 @@
+// src/core/i18n/en.ts
 export const en = {
   common: {
     cancel: 'Cancel',
@@ -62,7 +63,9 @@ export const en = {
     deselect: 'Deselect',
     localFilters: 'Local Filters (Session)',
     ignoreFolder: 'Ignore Folder',
+    unignoreFolder: 'Stop Ignoring Folder',
     ignoreFile: 'Ignore File',
+    unignoreFile: 'Stop Ignoring File',
     includeExt: 'Include Extension',
     ignoreExt: 'Ignore Extension',
     globalRules: 'Global Rules (Permanent)',
@@ -138,6 +141,7 @@ export const en = {
     placeholder: 'e.g. *.spec.ts, /tests/',
     invalidPattern: 'The pattern contains a syntax error.',
     ruleAdded: 'Path "{{pattern}}" added to exclusions.',
+    ruleRemoved: 'Path "{{pattern}}" removed from exclusions.',
     ruleRejected: 'Expression rejected.',
     useGitignore: 'Respect .gitignore',
     noGitignore: '.gitignore file not found',

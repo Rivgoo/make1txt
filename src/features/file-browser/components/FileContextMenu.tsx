@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconFolder, IconFileText, IconCircleCheck, IconCircleDashed, 
   IconWeight, IconClock, IconRoute, IconFiles, IconLoader2, IconX, 
-  IconEye, IconWorld, IconMapPin, IconCopy, IconCpu
+  IconEye, IconWorld, IconMapPin, IconMapPinOff, IconCopy, IconCpu
 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
@@ -29,7 +29,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   const { t } = useTranslation();
   const { 
     toggleSelection, nodes, setPreviewNode, globalSettings, updateGlobalSettings, 
-    localFilters, toggleExtension, addCustomPattern 
+    localFilters, toggleExtension, toggleLocalPathIgnore
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -42,6 +42,9 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   const isGlobalExtIgnored = !node.isDirectory && globalSettings.ignoredExtensions.includes(ext);
   const isLocalExtIgnored = !node.isDirectory && localFilters.extensions[ext]?.isActive === false;
   const isGlobalFolderIgnored = node.isDirectory && globalSettings.ignoredPaths.includes(node.name);
+
+  const localPatternCheck = node.relativePath;
+  const isLocallyIgnored = localFilters.customPatterns.some(p => p.pattern === localPatternCheck && p.isActive);
 
   useLayoutEffect(() => {
     if (!menuRef.current) return;
@@ -114,9 +117,12 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   };
 
   const handleToggleLocalPath = () => {
-    const pattern = node.isDirectory ? `${node.relativePath}/**` : node.relativePath;
-    addCustomPattern(pattern);
-    showToast('info', t('browser.localFilters'), t('quickSettings.ruleAdded').replace('{{pattern}}', pattern));
+    toggleLocalPathIgnore(node.relativePath);
+    if (isLocallyIgnored) {
+      showToast('info', t('browser.localFilters'), t('quickSettings.ruleRemoved').replace('{{pattern}}', localPatternCheck));
+    } else {
+      showToast('warning', t('browser.localFilters'), t('quickSettings.ruleAdded').replace('{{pattern}}', localPatternCheck));
+    }
     onClose();
   };
 
@@ -161,113 +167,122 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
           </button>
         </div>
 
-        <div className="context-menu-section-title">{t('browser.actions')}</div>
-        
-        {!node.isDirectory && (
-          <button className="context-menu-action" onClick={handlePreview}>
-            <IconEye size={18} /> {t('browser.viewContent')}
-          </button>
-        )}
+        <div className="context-menu-layout">
+          <div className="context-menu-actions-col">
+            <div className="context-menu-section-title">{t('browser.actions')}</div>
+            
+            {!node.isDirectory && (
+              <button className="context-menu-action" onClick={handlePreview}>
+                <IconEye size={18} /> {t('browser.viewContent')}
+              </button>
+            )}
 
-        <button className="context-menu-action" onClick={handleCopyPath}>
-          <IconCopy size={18} /> {t('browser.copyPath')}
-        </button>
-
-        {!node.isIgnored && (
-          <button 
-            className={`context-menu-action ${node.isSelected ? 'action-exclude' : 'action-include'}`}
-            onClick={handleToggleSelection}
-          >
-            {node.isSelected ? <IconCircleDashed size={18} /> : <IconCircleCheck size={18} />}
-            {node.isSelected ? t('browser.deselect') : t('browser.select')}
-          </button>
-        )}
-
-        <div className="context-menu-divider" />
-        <div className="context-menu-section-title">{t('browser.localFilters')}</div>
-
-        <button className="context-menu-action action-exclude" onClick={handleToggleLocalPath}>
-          <IconMapPin size={18} /> 
-          {node.isDirectory ? t('browser.ignoreFolder') : t('browser.ignoreFile')}
-        </button>
-
-        {!node.isDirectory && !isGlobalExtIgnored && ext !== 'no-extension' && (
-          <button className={`context-menu-action ${isLocalExtIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleLocalExt}>
-            <IconMapPin size={18} /> 
-            {isLocalExtIgnored ? t('browser.includeExt') : t('browser.ignoreExt')}
-            <span className="context-menu-action-desc">{ext}</span>
-          </button>
-        )}
-
-        <div className="context-menu-divider" />
-        <div className="context-menu-section-title">{t('browser.globalRules')}</div>
-
-        {node.isDirectory ? (
-          <button className={`context-menu-action ${isGlobalFolderIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleGlobalFolder}>
-            <IconWorld size={18} /> 
-            {isGlobalFolderIgnored ? t('browser.globalIncludeFolder') : t('browser.globalIgnoreFolder')}
-            <span className="context-menu-action-desc">{node.name}</span>
-          </button>
-        ) : (
-          ext !== 'no-extension' && (
-            <button className={`context-menu-action ${isGlobalExtIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleGlobalExt}>
-              <IconWorld size={18} /> 
-              {isGlobalExtIgnored ? t('browser.globalIncludeExt') : t('browser.globalIgnoreExt')}
-              <span className="context-menu-action-desc">{ext}</span>
+            <button className="context-menu-action" onClick={handleCopyPath}>
+              <IconCopy size={18} /> {t('browser.copyPath')}
             </button>
-          )
-        )}
 
-        <div className="context-menu-meta">
-          <div className="meta-row">
-            <IconRoute size={16} className="meta-icon" />
-            <div className="meta-details">
-              <span className="meta-label">{t('browser.path')}</span>
-              <span className="meta-value">{node.relativePath}</span>
-            </div>
+            {!node.isIgnored && (
+              <button 
+                className={`context-menu-action ${node.isSelected ? 'action-exclude' : 'action-include'}`}
+                onClick={handleToggleSelection}
+              >
+                {node.isSelected ? <IconCircleDashed size={18} /> : <IconCircleCheck size={18} />}
+                {node.isSelected ? t('browser.deselect') : t('browser.select')}
+              </button>
+            )}
+
+            <div className="context-menu-divider" />
+            <div className="context-menu-section-title">{t('browser.localFilters')}</div>
+
+            <button 
+              className={`context-menu-action ${isLocallyIgnored ? 'action-include' : 'action-exclude'}`} 
+              onClick={handleToggleLocalPath}
+            >
+              {isLocallyIgnored ? <IconMapPinOff size={18} /> : <IconMapPin size={18} />}
+              {isLocallyIgnored 
+                ? (node.isDirectory ? t('browser.unignoreFolder') : t('browser.unignoreFile'))
+                : (node.isDirectory ? t('browser.ignoreFolder') : t('browser.ignoreFile'))}
+            </button>
+
+            {!node.isDirectory && !isGlobalExtIgnored && ext !== 'no-extension' && (
+              <button className={`context-menu-action ${isLocalExtIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleLocalExt}>
+                <IconMapPin size={18} /> 
+                {isLocalExtIgnored ? t('browser.includeExt') : t('browser.ignoreExt')}
+                <span className="context-menu-action-desc">{ext}</span>
+              </button>
+            )}
+
+            <div className="context-menu-divider" />
+            <div className="context-menu-section-title">{t('browser.globalRules')}</div>
+
+            {node.isDirectory ? (
+              <button className={`context-menu-action ${isGlobalFolderIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleGlobalFolder}>
+                <IconWorld size={18} /> 
+                {isGlobalFolderIgnored ? t('browser.globalIncludeFolder') : t('browser.globalIgnoreFolder')}
+                <span className="context-menu-action-desc">{node.name}</span>
+              </button>
+            ) : (
+              ext !== 'no-extension' && (
+                <button className={`context-menu-action ${isGlobalExtIgnored ? 'action-include' : 'action-exclude'}`} onClick={handleToggleGlobalExt}>
+                  <IconWorld size={18} /> 
+                  {isGlobalExtIgnored ? t('browser.globalIncludeExt') : t('browser.globalIgnoreExt')}
+                  <span className="context-menu-action-desc">{ext}</span>
+                </button>
+              )
+            )}
           </div>
 
-          <div className="meta-row">
-            <IconWeight size={16} className="meta-icon" />
-            <div className="meta-details">
-              <span className="meta-label">{t('browser.size')}</span>
-              <span className="meta-value">
-                {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : formatFileSize(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes)}
-              </span>
-            </div>
-          </div>
-
-          <div className="meta-row">
-            <IconCpu size={16} className="meta-icon" />
-            <div className="meta-details">
-              <span className="meta-label">{t('stats.tokens')}</span>
-              <span className="meta-value">
-                {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : `~${estimateTokenCount(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes).toLocaleString()}`}
-              </span>
-            </div>
-          </div>
-
-          {node.isDirectory ? (
+          <div className="context-menu-meta-col">
             <div className="meta-row">
-              <IconFiles size={16} className="meta-icon" />
+              <IconRoute size={16} className="meta-icon" />
               <div className="meta-details">
-                <span className="meta-label">{t('browser.files')}</span>
+                <span className="meta-label">{t('browser.path')}</span>
+                <span className="meta-value">{node.relativePath}</span>
+              </div>
+            </div>
+
+            <div className="meta-row">
+              <IconWeight size={16} className="meta-icon" />
+              <div className="meta-details">
+                <span className="meta-label">{t('browser.size')}</span>
                 <span className="meta-value">
-                  {folderStat ? `${folderStat.selected} / ${folderStat.total}` : '...'}
+                  {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : formatFileSize(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes)}
                 </span>
               </div>
             </div>
-          ) : (
+
             <div className="meta-row">
-              <IconClock size={16} className="meta-icon" />
+              <IconCpu size={16} className="meta-icon" />
               <div className="meta-details">
-                <span className="meta-label">{t('browser.modified')}</span>
+                <span className="meta-label">{t('stats.tokens')}</span>
                 <span className="meta-value">
-                  {isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : meta?.modified}
+                  {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : `~${estimateTokenCount(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes).toLocaleString()}`}
                 </span>
               </div>
             </div>
-          )}
+
+            {node.isDirectory ? (
+              <div className="meta-row">
+                <IconFiles size={16} className="meta-icon" />
+                <div className="meta-details">
+                  <span className="meta-label">{t('browser.files')}</span>
+                  <span className="meta-value">
+                    {folderStat ? `${folderStat.selected} / ${folderStat.total}` : '...'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="meta-row">
+                <IconClock size={16} className="meta-icon" />
+                <div className="meta-details">
+                  <span className="meta-label">{t('browser.modified')}</span>
+                  <span className="meta-value">
+                    {isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : meta?.modified}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+/* src/features/file-browser/components/FileTreeNode.css */
 .tree-node {
   display: flex;
   align-items: center;
@@ -75,12 +76,58 @@
   color: var(--text-muted);
   font-family: monospace;
   white-space: nowrap;
+  margin-right: var(--spacing-lg);
   flex-shrink: 0;
 }
 
 .tree-node-meta-mixed {
   color: var(--warning);
   font-weight: 700;
+}
+
+.tree-node-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+}
+
+.tree-node:hover .tree-node-actions {
+  opacity: 1;
+}
+
+.tree-node-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.tree-node-action-btn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+}
+
+.tree-node-action-btn.active-ignore {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--danger);
+}
+
+.tree-node-actions-divider {
+  width: 1px;
+  height: 14px;
+  background-color: var(--border-color);
+  margin: 0 2px;
 }
 
 .tree-node-leader {
@@ -98,10 +145,14 @@
 }
 
 .tree-node-tokens {
+  width: fit-content;
+  text-align: right;
   font-size: 0.75rem;
   color: var(--text-muted);
   font-family: monospace;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   flex-shrink: 0;
   transition: color 0.2s ease, text-shadow 0.2s ease;
 }

@@ -95,14 +95,19 @@ export function createIgnoreRegexes(gitignoreContent: string): RegExp[] {
 }
 
 export function compileGlobToRegex(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+^${}()|\\]/g, '\\$&');
+  let cleaned = pattern.trim();
+  if (cleaned.endsWith('/')) {
+    cleaned = cleaned.slice(0, -1);
+  }
+
+  const escaped = cleaned.replace(/[.+^${}()|\\]/g, '\\$&');
 
   const regexStr = escaped
     .replace(/\*\*/g, '.*')       
     .replace(/\*/g, '[^/]*')      
     .replace(/\?/g, '[^/]');      
 
-  return new RegExp(`^${regexStr}$|/${regexStr}$|/${regexStr}/`);
+  return new RegExp(`(^|/)${regexStr}($|/)`);
 }
 
 export function isValidGlobOrRegex(pattern: string): boolean {
