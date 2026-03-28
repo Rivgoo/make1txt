@@ -158,6 +158,7 @@ export const en = {
     noGitignore: '.gitignore file not found',
     showGloballyIgnored: 'Show globally ignored',
     showLocallyIgnored: 'Show locally ignored',
+    showEmptyFolders: 'Show empty folders',
     generateStructure: 'Generate file structure',
     structureIncludeIgnored: 'Structure: include ignored'
   },

@@ -3,10 +3,11 @@ import type { FileNode, TreeSymbols } from '../types/file.types';
 interface TreeOptions {
   includeIgnored: boolean;
   symbols: TreeSymbols;
+  showEmptyFolders: boolean;
 }
 
 export function generateTextTree(nodes: FileNode[], options: TreeOptions): string {
-  const { includeIgnored, symbols } = options;
+  const { includeIgnored, symbols, showEmptyFolders } = options;
   
   let validNodes = includeIgnored 
     ? nodes 
@@ -14,23 +15,25 @@ export function generateTextTree(nodes: FileNode[], options: TreeOptions): strin
     
   if (validNodes.length === 0) return '';
 
-  const parentMap = new Map<string, string | null>();
-  for (const node of validNodes) {
-    parentMap.set(node.id, node.parentId);
-  }
+  if (!showEmptyFolders) {
+    const parentMap = new Map<string, string | null>();
+    for (const node of validNodes) {
+      parentMap.set(node.id, node.parentId);
+    }
 
-  const dirHasFiles = new Set<string>();
-  for (const node of validNodes) {
-    if (!node.isDirectory) {
-      let currentParent = node.parentId;
-      while (currentParent && !dirHasFiles.has(currentParent)) {
-        dirHasFiles.add(currentParent);
-        currentParent = parentMap.get(currentParent) || null;
+    const dirHasFiles = new Set<string>();
+    for (const node of validNodes) {
+      if (!node.isDirectory) {
+        let currentParent = node.parentId;
+        while (currentParent && !dirHasFiles.has(currentParent)) {
+          dirHasFiles.add(currentParent);
+          currentParent = parentMap.get(currentParent) || null;
+        }
       }
     }
-  }
 
-  validNodes = validNodes.filter(n => !n.isDirectory || dirHasFiles.has(n.id));
+    validNodes = validNodes.filter(n => !n.isDirectory || dirHasFiles.has(n.id));
+  }
 
   if (validNodes.length === 0) return '';
 

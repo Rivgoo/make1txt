@@ -40,6 +40,7 @@ export function useGenerator() {
       const rawTree = generateTextTree(nodes, {
         includeIgnored: localFilters.treeIncludeIgnored,
         symbols: globalSettings.treeSymbols,
+        showEmptyFolders: localFilters.showEmptyFolders,
       });
 
       if (!rawTree) return fileContentText;

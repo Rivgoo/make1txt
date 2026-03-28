@@ -208,18 +208,19 @@ export function FileBrowser() {
       finalNodes = baseFiltered.filter(node => matchedNodes.has(node.id));
     }
 
-    const dirHasFiles = new Set<string>();
-    for (const node of finalNodes) {
-      if (!node.isDirectory) {
-        let currentParent = node.parentId;
-        while (currentParent && !dirHasFiles.has(currentParent)) {
-          dirHasFiles.add(currentParent);
-          currentParent = parentMap.get(currentParent) || null;
+    if (!localFilters.showEmptyFolders) {
+      const dirHasFiles = new Set<string>();
+      for (const node of finalNodes) {
+        if (!node.isDirectory) {
+          let currentParent = node.parentId;
+          while (currentParent && !dirHasFiles.has(currentParent)) {
+            dirHasFiles.add(currentParent);
+            currentParent = parentMap.get(currentParent) || null;
+          }
         }
       }
+      finalNodes = finalNodes.filter(n => !n.isDirectory || dirHasFiles.has(n.id));
     }
-    
-    finalNodes = finalNodes.filter(n => !n.isDirectory || dirHasFiles.has(n.id));
 
     const childrenMap = new Map<string | null, FileNode[]>();
     for (const node of finalNodes) {
@@ -292,7 +293,7 @@ export function FileBrowser() {
     traverse(null);
     return result;
 
-  }, [nodes, searchTerm, localFilters.showGloballyIgnored, localFilters.showLocallyIgnored, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
+  }, [nodes, searchTerm, localFilters.showGloballyIgnored, localFilters.showLocallyIgnored, localFilters.showEmptyFolders, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
 
   const sortByOptions: SelectOption[] = [
     { value: 'none', label: t('browser.sortNone'), icon: <IconBan size={16} /> },

@@ -158,6 +158,7 @@ export const uk = {
     noGitignore: 'Файл .gitignore не знайдено',
     showGloballyIgnored: 'Показати глобально ігноровані',
     showLocallyIgnored: 'Показати локально ігноровані',
+    showEmptyFolders: 'Показати порожні папки',
     generateStructure: 'Генерувати структуру файлів',
     structureIncludeIgnored: 'Структура: включати ігноровані'
   },

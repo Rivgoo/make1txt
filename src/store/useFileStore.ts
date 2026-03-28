@@ -206,6 +206,7 @@ export const useFileStore = create<FileStore>((set, get) => {
       hasGitignore: false, 
       showGloballyIgnored: false,
       showLocallyIgnored: true,
+      showEmptyFolders: false,
       generateTree: true,
       treeIncludeIgnored: false
     },
@@ -314,6 +315,7 @@ export const useFileStore = create<FileStore>((set, get) => {
                 useGitignore: savedFilters.useGitignore,
                 showGloballyIgnored: savedFilters.showGloballyIgnored ?? oldFormatFilters.showIgnored ?? false,
                 showLocallyIgnored: savedFilters.showLocallyIgnored ?? true,
+                showEmptyFolders: savedFilters.showEmptyFolders ?? false,
                 generateTree: savedFilters.generateTree ?? true,
                 treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false,
             };
@@ -331,6 +333,7 @@ export const useFileStore = create<FileStore>((set, get) => {
             hasGitignore,
             showGloballyIgnored: localFiltersToApply.showGloballyIgnored ?? false,
             showLocallyIgnored: localFiltersToApply.showLocallyIgnored ?? true,
+            showEmptyFolders: localFiltersToApply.showEmptyFolders ?? false,
             generateTree: localFiltersToApply.generateTree ?? true,
             treeIncludeIgnored: localFiltersToApply.treeIncludeIgnored ?? false,
           },
@@ -581,6 +584,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           useGitignore: localFilters.useGitignore,
           showGloballyIgnored: localFilters.showGloballyIgnored,
           showLocallyIgnored: localFilters.showLocallyIgnored,
+          showEmptyFolders: localFilters.showEmptyFolders,
           generateTree: localFilters.generateTree,
           treeIncludeIgnored: localFilters.treeIncludeIgnored
         }
@@ -616,6 +620,7 @@ export const useFileStore = create<FileStore>((set, get) => {
             useGitignore: savedFilters.useGitignore,
             showGloballyIgnored: savedFilters.showGloballyIgnored ?? oldFormatFilters.showIgnored ?? false,
             showLocallyIgnored: savedFilters.showLocallyIgnored ?? true,
+            showEmptyFolders: savedFilters.showEmptyFolders ?? false,
             generateTree: savedFilters.generateTree ?? true,
             treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false
           };

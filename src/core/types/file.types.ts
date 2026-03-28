@@ -66,6 +66,7 @@ export interface LocalFilters {
   hasGitignore: boolean;
   showGloballyIgnored: boolean;
   showLocallyIgnored: boolean;
+  showEmptyFolders: boolean;
   generateTree: boolean;
   treeIncludeIgnored: boolean;
 }
@@ -76,6 +77,7 @@ export interface SavedLocalFilters {
   useGitignore: boolean;
   showGloballyIgnored: boolean;
   showLocallyIgnored: boolean;
+  showEmptyFolders: boolean;
   generateTree: boolean;
   treeIncludeIgnored: boolean;
 }
