@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { FileNode, GeneratorStats, Profile, GlobalSettings, LocalFilters, ExtensionStat, SavedLocalFilters } from '@/core/types/file.types';
+import type { TokenizerInput, TokenizerOutput } from '@/core/types/worker.types';
 import { requestDirectoryAccess, readDirectoryRecursively, verifyDirectoryPermission } from '@/core/services/FileSystemService';
 import { createIgnoreRegexes, isPathGloballyIgnored, compileGlobToRegex, DEFAULT_IGNORED_DIRECTORIES, DEFAULT_IGNORED_EXTENSIONS } from '@/core/services/IgnoreService';
 import { estimateTokenCount, getFileExtension } from '@/core/utils/stats.utils';
@@ -11,6 +12,7 @@ export interface FolderStat {
   absoluteTotal: number;
   sizeBytes: number;
   selectedSizeBytes: number;
+  exactTokens?: number;
 }
 
 export const DEFAULT_TREE_SYMBOLS = {
@@ -33,6 +35,8 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   treeWrapper: 'Directory Structure:\n\n{{tree}}\n\n',
   treeSymbols: DEFAULT_TREE_SYMBOLS,
 };
+
+const MAX_AUTO_TOKENS = 1_000_000;
 
 function loadGlobalSettings(): GlobalSettings {
   const cached = localStorage.getItem('make1txt_globalSettings');
@@ -79,6 +83,12 @@ interface FileStore {
   generatedText: string | null;
   previewNode: FileNode | null;
   
+  realTokenMap: Record<string, number>;
+  isTokenizing: boolean;
+  tokenizationProgress: number;
+  needsManualTokenization: boolean;
+  tokenizerWorker: Worker | null;
+  
   setActiveTab: (tab: 'tree' | 'result') => void;
   setGeneratedText: (text: string | null) => void;
   setPreviewNode: (node: FileNode | null) => void;
@@ -110,6 +120,10 @@ interface FileStore {
   saveCurrentProfile: (name: string, saveDirectory: boolean) => Promise<void>;
   loadProfile: (profile: Profile) => Promise<void>;
   deleteProfile: (id: string) => Promise<void>;
+  
+  evaluateTokenization: () => void;
+  runTokenization: (force: boolean) => void;
+  cancelTokenization: () => void;
 }
 
 export const useFileStore = create<FileStore>((set, get) => {
@@ -193,6 +207,10 @@ export const useFileStore = create<FileStore>((set, get) => {
     };
   };
 
+  const triggerEvaluation = () => {
+    get().evaluateTokenization();
+  };
+
   return {
     nodes: [],
     isLoading: false,
@@ -220,6 +238,12 @@ export const useFileStore = create<FileStore>((set, get) => {
     generatedText: null,
     previewNode: null,
 
+    realTokenMap: {},
+    isTokenizing: false,
+    tokenizationProgress: 0,
+    needsManualTokenization: false,
+    tokenizerWorker: null,
+
     setActiveTab: (tab) => set({ activeTab: tab }),
     setGeneratedText: (text) => set({ generatedText: text }),
     setPreviewNode: (node) => set({ previewNode: node }),
@@ -238,8 +262,16 @@ export const useFileStore = create<FileStore>((set, get) => {
     loadDirectoryFromHandle: async (handle: FileSystemDirectoryHandle, applyProfile?: Profile, isRestored: boolean = false) => {
       if (get().isLoading) throw new Error('ALREADY_LOADING');
       
+      get().cancelTokenization();
       const controller = new AbortController();
-      set({ isLoading: true, scannedFilesCount: 0, previewNode: null, abortController: controller });
+      set({ 
+        isLoading: true, 
+        scannedFilesCount: 0, 
+        previewNode: null, 
+        abortController: controller,
+        realTokenMap: {},
+        needsManualTokenization: false
+      });
       
       try {
         const hasPermission = await verifyDirectoryPermission(handle);
@@ -344,6 +376,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         };
 
         set({ ...initialState, ...recompileAndRecalculate(initialState) });
+        triggerEvaluation();
 
       } catch (error) {
         set({ isLoading: false, scannedFilesCount: 0, abortController: null });
@@ -367,6 +400,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           nodes: computeNodes(tempState as FileStore) 
         };
       });
+      triggerEvaluation();
     },
 
     resetGlobalSettings: () => {
@@ -383,6 +417,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           nodes: computeNodes(tempState as FileStore) 
         };
       });
+      triggerEvaluation();
     },
 
     updateLocalFilters: (newFilters) => {
@@ -390,6 +425,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const filters = { ...state.localFilters, ...newFilters };
         return { localFilters: filters, ...recompileAndRecalculate({ ...state, localFilters: filters } as FileStore) };
       });
+      triggerEvaluation();
     },
 
     toggleExtension: (ext) => {
@@ -410,6 +446,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           nodes: computeNodes(tempState as FileStore, newIsActive ? ext : undefined)
         };
       });
+      triggerEvaluation();
     },
 
     setAllExtensionsState: (isActive: boolean) => {
@@ -425,6 +462,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           nodes: computeNodes(tempState as FileStore, undefined, isActive)
         };
       });
+      triggerEvaluation();
     },
 
     addCustomPattern: (pattern) => {
@@ -434,6 +472,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const newFilters = { ...state.localFilters, customPatterns: [...state.localFilters.customPatterns, { id: crypto.randomUUID(), pattern, isActive: true }] };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
+      triggerEvaluation();
     },
 
     updateCustomPattern: (id, newPattern) => {
@@ -441,6 +480,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const newFilters = { ...state.localFilters, customPatterns: state.localFilters.customPatterns.map(p => p.id === id ? { ...p, pattern: newPattern } : p) };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
+      triggerEvaluation();
     },
 
     toggleCustomPattern: (id) => {
@@ -448,6 +488,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const newFilters = { ...state.localFilters, customPatterns: state.localFilters.customPatterns.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p) };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
+      triggerEvaluation();
     },
 
     removeCustomPattern: (id) => {
@@ -455,6 +496,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const newFilters = { ...state.localFilters, customPatterns: state.localFilters.customPatterns.filter(p => p.id !== id) };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
+      triggerEvaluation();
     },
 
     moveCustomPattern: (id, direction) => {
@@ -467,6 +509,7 @@ export const useFileStore = create<FileStore>((set, get) => {
         const newFilters = { ...state.localFilters, customPatterns: patterns };
         return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
       });
+      triggerEvaluation();
     },
     
     toggleLocalPathIgnore: (path) => {
@@ -494,6 +537,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           return { localFilters: newFilters, ...recompileAndRecalculate({ ...state, localFilters: newFilters } as FileStore) };
         }
       });
+      triggerEvaluation();
     },
 
     toggleSelection: (id, checked) => {
@@ -513,6 +557,7 @@ export const useFileStore = create<FileStore>((set, get) => {
 
         return { nodes: newNodes };
       });
+      triggerEvaluation();
     },
 
     toggleExpand: (id) => {
@@ -525,19 +570,23 @@ export const useFileStore = create<FileStore>((set, get) => {
       set((state) => ({
         nodes: state.nodes.map(node => node.isIgnored ? node : { ...node, isSelected: true })
       }));
+      triggerEvaluation();
     },
 
     deselectAll: () => {
       set((state) => ({
         nodes: state.nodes.map(node => node.isIgnored ? node : { ...node, isSelected: false })
       }));
+      triggerEvaluation();
     },
 
     getStats: () => {
-      const { nodes } = get();
+      const { nodes, realTokenMap } = get();
       let totalFiles = 0;
       let selectedFiles = 0;
       let totalSizeBytes = 0;
+      let tokens = 0;
+      let allSelectedHaveRealTokens = true;
 
       for (const node of nodes) {
         if (node.isDirectory) continue;
@@ -545,18 +594,97 @@ export const useFileStore = create<FileStore>((set, get) => {
         if (node.isSelected && !node.isIgnored) {
           selectedFiles++;
           totalSizeBytes += node.sizeBytes;
+          
+          if (realTokenMap[node.id] !== undefined) {
+            tokens += realTokenMap[node.id];
+          } else {
+            tokens += estimateTokenCount(node.sizeBytes);
+            allSelectedHaveRealTokens = false;
+          }
         }
       }
 
-      const estimatedTokens = estimateTokenCount(totalSizeBytes);
+      const estimatedTotal = estimateTokenCount(totalSizeBytes);
+      if (selectedFiles === 0) allSelectedHaveRealTokens = false;
 
       return {
         totalFiles,
         selectedFiles,
         totalSizeBytes,
-        totalWords: Math.floor(estimatedTokens * 0.75),
-        estimatedTokens,
+        totalWords: Math.floor(estimatedTotal * 0.75),
+        tokens,
+        isExactTokens: allSelectedHaveRealTokens,
       };
+    },
+
+    evaluateTokenization: () => {
+      const { nodes, isTokenizing } = get();
+      if (isTokenizing) return;
+
+      let estimatedTokens = 0;
+      for (const node of nodes) {
+        if (!node.isDirectory && node.isSelected && !node.isIgnored) {
+          estimatedTokens += estimateTokenCount(node.sizeBytes);
+        }
+      }
+
+      if (estimatedTokens >= MAX_AUTO_TOKENS) {
+        set({ needsManualTokenization: true });
+      } else if (estimatedTokens > 0) {
+        set({ needsManualTokenization: false });
+        get().runTokenization(false);
+      }
+    },
+
+    cancelTokenization: () => {
+      const worker = get().tokenizerWorker;
+      if (worker) {
+        worker.terminate();
+        set({ tokenizerWorker: null, isTokenizing: false, tokenizationProgress: 0 });
+      }
+    },
+
+    runTokenization: () => {
+      const { nodes, isTokenizing, realTokenMap } = get();
+      if (isTokenizing) return;
+
+      const filesToTokenize = nodes
+        .filter(n => !n.isDirectory && n.isSelected && !n.isIgnored && realTokenMap[n.id] === undefined)
+        .map(n => ({ id: n.id, handle: n.handle as FileSystemFileHandle }));
+
+      if (filesToTokenize.length === 0) return;
+
+      get().cancelTokenization();
+
+      const worker = new Worker(new URL('@/core/workers/tokenizer.worker.ts', import.meta.url), { type: 'module' });
+      
+      set({ 
+        isTokenizing: true, 
+        tokenizationProgress: 0, 
+        tokenizerWorker: worker,
+        needsManualTokenization: false 
+      });
+
+      worker.onmessage = (e: MessageEvent<TokenizerOutput>) => {
+        const data = e.data;
+        if (data.type === 'progress') {
+          set({ tokenizationProgress: data.progress });
+        } else if (data.type === 'result') {
+          set(state => ({
+            realTokenMap: { ...state.realTokenMap, ...data.results },
+            isTokenizing: false,
+            tokenizationProgress: 100,
+            tokenizerWorker: null
+          }));
+          worker.terminate();
+        } else if (data.type === 'error') {
+          console.error('[Tokenizer Worker Error]', data.error);
+          set({ isTokenizing: false, tokenizerWorker: null });
+          worker.terminate();
+        }
+      };
+
+      worker.postMessage({ files: filesToTokenize } as TokenizerInput);
     },
 
     fetchProfiles: async () => {
@@ -633,6 +761,7 @@ export const useFileStore = create<FileStore>((set, get) => {
           };
         });
         saveGlobalSettings(profile.settings);
+        triggerEvaluation();
       }
     },
 

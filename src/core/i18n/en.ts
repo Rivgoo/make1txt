@@ -35,7 +35,9 @@ export const en = {
     selected: 'Selected',
     size: 'Size',
     words: 'Words',
-    tokens: 'Tokens'
+    tokens: 'Tokens',
+    exact: 'Exact',
+    estimated: 'Estimated'
   },
   browser: {
     tabStructure: 'Structure',
@@ -160,7 +162,11 @@ export const en = {
     showLocallyIgnored: 'Show locally ignored',
     showEmptyFolders: 'Show empty folders',
     generateStructure: 'Generate file structure',
-    structureIncludeIgnored: 'Structure: include ignored'
+    structureIncludeIgnored: 'Structure: include ignored',
+    tokenWarningTitle: 'Large Project Detected',
+    tokenWarningDesc: 'Showing estimated tokens because the selection exceeds 1M tokens. Calculating exact tokens may take time.',
+    calculateExact: 'Calculate Exact Tokens',
+    calculatingTokens: 'Calculating exact tokens...'
   },
   generator: {
     cancelled: 'Generation process was interrupted.',

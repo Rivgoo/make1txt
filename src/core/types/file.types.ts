@@ -24,7 +24,8 @@ export interface GeneratorStats {
   selectedFiles: number;
   totalSizeBytes: number;
   totalWords: number;
-  estimatedTokens: number;
+  tokens: number;
+  isExactTokens: boolean;
 }
 
 export interface TreeSymbols {

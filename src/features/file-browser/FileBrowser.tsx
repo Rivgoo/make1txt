@@ -50,7 +50,8 @@ export function FileBrowser() {
 
   const { 
     nodes, isLoading, scannedFilesCount, loadDirectory, cancelDirectoryLoad, toggleExpand, toggleSelection, 
-    activeTab, setActiveTab, generatedText, selectAll, deselectAll, previewNode, setPreviewNode, localFilters 
+    activeTab, setActiveTab, generatedText, selectAll, deselectAll, previewNode, setPreviewNode, localFilters,
+    realTokenMap 
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -147,7 +148,8 @@ export function FileBrowser() {
           selected: 0, 
           absoluteTotal: 0, 
           sizeBytes: 0, 
-          selectedSizeBytes: 0 
+          selectedSizeBytes: 0,
+          exactTokens: 0
         };
       }
     }
@@ -168,6 +170,14 @@ export function FileBrowser() {
               if (node.isSelected) {
                 stats[currentPath].selected += 1;
                 stats[currentPath].selectedSizeBytes += node.sizeBytes;
+                
+                if (stats[currentPath].exactTokens !== undefined) {
+                  if (realTokenMap[node.id] !== undefined) {
+                    stats[currentPath].exactTokens! += realTokenMap[node.id];
+                  } else {
+                    stats[currentPath].exactTokens = undefined;
+                  }
+                }
               }
             }
           }
@@ -176,7 +186,7 @@ export function FileBrowser() {
     }
 
     return stats;
-  }, [nodes]);
+  }, [nodes, realTokenMap]);
 
   const sortedAndFilteredNodes = useMemo(() => {
     const baseFiltered = nodes.filter(n => {

@@ -35,7 +35,9 @@ export const uk = {
     selected: 'Вибрано',
     size: 'Розмір',
     words: 'Слів',
-    tokens: 'Токенів'
+    tokens: 'Токенів',
+    exact: 'Точно',
+    estimated: 'Приблизно'
   },
   browser: {
     tabStructure: 'Структура',
@@ -160,7 +162,11 @@ export const uk = {
     showLocallyIgnored: 'Показати локально ігноровані',
     showEmptyFolders: 'Показати порожні папки',
     generateStructure: 'Генерувати структуру файлів',
-    structureIncludeIgnored: 'Структура: включати ігноровані'
+    structureIncludeIgnored: 'Структура: включати ігноровані',
+    tokenWarningTitle: 'Знайдено великий проект',
+    tokenWarningDesc: 'Показані приблизні токени, оскільки вибір перевищує 1М токенів. Точний підрахунок може зайняти час.',
+    calculateExact: 'Порахувати точні токени',
+    calculatingTokens: 'Рахуємо точні токени...'
   },
   generator: {
     cancelled: 'Процес генерації було перервано.',

@@ -29,7 +29,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   const { t } = useTranslation();
   const { 
     toggleSelection, nodes, previewNode, setPreviewNode, globalSettings, updateGlobalSettings, 
-    localFilters, toggleExtension, toggleLocalPathIgnore
+    localFilters, toggleExtension, toggleLocalPathIgnore, realTokenMap
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -154,6 +154,11 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
     onClose();
   };
 
+  const isExactTotal = node.isDirectory ? folderStat?.exactTokens !== undefined : realTokenMap[node.id] !== undefined;
+  const tokensVal = isExactTotal 
+    ? (node.isDirectory ? folderStat!.exactTokens! : realTokenMap[node.id])
+    : estimateTokenCount(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes);
+
   return (
     <div className="context-menu-overlay" onContextMenu={(e) => { e.preventDefault(); onClose(); }} onClick={onClose}>
       <div 
@@ -262,7 +267,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
               <div className="meta-details">
                 <span className="meta-label">{t('stats.tokens')}</span>
                 <span className="meta-value">
-                  {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : `~${estimateTokenCount(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes).toLocaleString()}`}
+                  {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : `${!isExactTotal ? '~' : ''}${tokensVal.toLocaleString()}`}
                 </span>
               </div>
             </div>

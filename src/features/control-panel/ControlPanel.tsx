@@ -30,7 +30,7 @@ export function ControlPanel() {
   });
 
   const { isGenerating, progress, startGeneration, cancelGeneration } = useGenerator();
-  const { fetchProfiles, getStats, isLoading } = useFileStore();
+  const { fetchProfiles, getStats, isLoading, isTokenizing, tokenizationProgress } = useFileStore();
   const { showToast } = useToast();
   const stats = getStats();
 
@@ -96,8 +96,12 @@ export function ControlPanel() {
                 <span className="stat-value">{stats.totalWords.toLocaleString()}</span>
               </div>
               <div className="stat-box">
-                <span className="stat-label"><IconCpu size={14}/> {t('stats.tokens')}</span>
-                <span className="stat-value accent">~{stats.estimatedTokens.toLocaleString()}</span>
+                <span className="stat-label" data-tooltip={stats.isExactTokens ? t('stats.exact') : t('stats.estimated')} data-tooltip-pos="top">
+                  <IconCpu size={14}/> {t('stats.tokens')} {isTokenizing && `(${tokenizationProgress}%)`}
+                </span>
+                <span className="stat-value accent">
+                  {!stats.isExactTokens && '~'}{stats.tokens.toLocaleString()}
+                </span>
               </div>
             </div>
           )}

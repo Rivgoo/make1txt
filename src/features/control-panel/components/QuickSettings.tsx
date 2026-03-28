@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconBrandGit, IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
-  IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin, IconFolderOff
+  IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin, IconFolderOff, IconAlertCircle, IconLoader2
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -16,7 +16,7 @@ export function QuickSettings() {
   const { 
     localFilters, updateLocalFilters, toggleExtension, setAllExtensionsState, 
     addCustomPattern, updateCustomPattern, toggleCustomPattern, removeCustomPattern, moveCustomPattern,
-    globalSettings
+    globalSettings, needsManualTokenization, isTokenizing, runTokenization
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -58,6 +58,28 @@ export function QuickSettings() {
 
   return (
     <div className="quick-settings">
+
+      {(needsManualTokenization || isTokenizing) && (
+        <div className="qs-section" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'var(--warning)' }}>
+          <div className="qs-header">
+            <span className="qs-title" style={{ color: 'var(--warning)' }}>
+              {isTokenizing ? <IconLoader2 size={16} className="spin" /> : <IconAlertCircle size={16} />} 
+              {t('quickSettings.tokenWarningTitle')}
+            </span>
+          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {t('quickSettings.tokenWarningDesc')}
+          </p>
+          <Button 
+            variant="secondary" 
+            onClick={() => runTokenization(true)} 
+            disabled={isTokenizing}
+            style={{ marginTop: 'var(--spacing-xs)', borderColor: 'var(--warning)', color: 'var(--warning)' }}
+          >
+            {isTokenizing ? t('quickSettings.calculatingTokens') : t('quickSettings.calculateExact')}
+          </Button>
+        </div>
+      )}
       
       {sortedExtensions.length > 0 && (
         <div className="qs-section">

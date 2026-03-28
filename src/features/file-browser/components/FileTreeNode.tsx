@@ -21,7 +21,7 @@ interface FileTreeNodeProps {
 
 export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect, onContextMenu }: FileTreeNodeProps) {
   const { t } = useTranslation();
-  const { localFilters, previewNode, setPreviewNode, toggleLocalPathIgnore } = useFileStore();
+  const { localFilters, previewNode, setPreviewNode, toggleLocalPathIgnore, realTokenMap } = useFileStore();
   const { showToast } = useToast();
   const paddingLeft = node.depth * 16 + 8;
   const checkboxRef = useRef<HTMLInputElement>(null);
@@ -120,8 +120,17 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
     ? (folderStat?.selectedSizeBytes || 0) 
     : (node.isSelected && !node.isIgnored ? node.sizeBytes : 0);
 
-  const totalTokens = estimateTokenCount(totalBytes);
-  const selectedTokens = estimateTokenCount(selectedBytes);
+  const isExactTotal = node.isDirectory ? folderStat?.exactTokens !== undefined : realTokenMap[node.id] !== undefined;
+  const totalTokens = isExactTotal 
+    ? (node.isDirectory ? folderStat!.exactTokens! : realTokenMap[node.id])
+    : estimateTokenCount(totalBytes);
+
+  let selectedTokens = 0;
+  if (node.isDirectory) {
+    selectedTokens = folderStat?.exactTokens !== undefined ? folderStat.exactTokens : estimateTokenCount(selectedBytes);
+  } else {
+    selectedTokens = (node.isSelected && !node.isIgnored) ? totalTokens : 0;
+  }
 
   const isFullySelected = totalBytes === selectedBytes;
   const nodeClass = `tree-node ${isIgnoredVisually ? 'tree-node--ignored' : ''} ${isUnselected && !isIgnoredVisually ? 'tree-node--unselected' : ''}`;
@@ -206,11 +215,11 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
         data-tooltip-pos="top"
       >
         {isFullySelected ? (
-          <span className="tree-node-tokens-selected">~{totalTokens.toLocaleString()}</span>
+          <span className="tree-node-tokens-selected">{!isExactTotal && '~'}{totalTokens.toLocaleString()}</span>
         ) : (
           <>
-            <span className="tree-node-tokens-selected">~{selectedTokens.toLocaleString()}</span>
-            <span className="tree-node-tokens-total">/ ~{totalTokens.toLocaleString()}</span>
+            <span className="tree-node-tokens-selected">{!isExactTotal && '~'}{selectedTokens.toLocaleString()}</span>
+            <span className="tree-node-tokens-total">/ {!isExactTotal && '~'}{totalTokens.toLocaleString()}</span>
           </>
         )}
       </div>
