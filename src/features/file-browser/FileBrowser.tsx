@@ -5,7 +5,7 @@ import {
   IconListTree, IconCode, IconChecks, IconSquareX, IconFiles, 
   IconSquareRoundedX, IconArrowsSort, IconAbc, IconWeight, 
   IconCpu, IconBan, IconSortAscendingLetters, IconSortDescendingLetters, 
-  IconCodeAsterix, IconFilter, IconFolders
+  IconCodeAsterix, IconFilter, IconFolders, IconBrandGithub
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { VirtualList } from '@/shared/ui/VirtualList/VirtualList';
@@ -185,6 +185,11 @@ export function FileBrowser() {
       return true;
     });
 
+    const parentMap = new Map<string, string | null>();
+    for (const node of baseFiltered) {
+      parentMap.set(node.id, node.parentId);
+    }
+
     let finalNodes = baseFiltered;
     if (searchTerm.trim()) {
       const lowerSearch = searchTerm.toLowerCase();
@@ -194,15 +199,27 @@ export function FileBrowser() {
         if (node.name.toLowerCase().includes(lowerSearch)) {
           matchedNodes.add(node.id);
           let currentParent = node.parentId;
-          while (currentParent) {
+          while (currentParent && !matchedNodes.has(currentParent)) {
             matchedNodes.add(currentParent);
-            const parentNode = baseFiltered.find(n => n.id === currentParent);
-            currentParent = parentNode ? parentNode.parentId : null;
+            currentParent = parentMap.get(currentParent) || null;
           }
         }
       }
       finalNodes = baseFiltered.filter(node => matchedNodes.has(node.id));
     }
+
+    const dirHasFiles = new Set<string>();
+    for (const node of finalNodes) {
+      if (!node.isDirectory) {
+        let currentParent = node.parentId;
+        while (currentParent && !dirHasFiles.has(currentParent)) {
+          dirHasFiles.add(currentParent);
+          currentParent = parentMap.get(currentParent) || null;
+        }
+      }
+    }
+    
+    finalNodes = finalNodes.filter(n => !n.isDirectory || dirHasFiles.has(n.id));
 
     const childrenMap = new Map<string | null, FileNode[]>();
     for (const node of finalNodes) {
@@ -314,7 +331,18 @@ export function FileBrowser() {
           </button>
         </div>
         
-        <div className="browser-top-spacer"></div>
+        <div className="browser-top-spacer">
+          <a 
+            href="https://github.com/Rivgoo/make1txt" 
+            target="_blank" 
+            rel="noreferrer" 
+            className="github-link"
+            data-tooltip="GitHub"
+            data-tooltip-pos="left"
+          >
+            <IconBrandGithub size={24} />
+          </a>
+        </div>
       </div>
 
       {isLoading && (

@@ -39,6 +39,22 @@
 
 .browser-top-spacer {
   flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: color 0.2s ease, transform 0.1s ease;
+  text-decoration: none;
+}
+
+.github-link:hover {
+  color: var(--text-primary);
+  transform: scale(1.05);
 }
 
 .browser-tab {
@@ -103,7 +119,7 @@
   max-height: 500px;
   opacity: 1;
   margin-top: var(--spacing-sm);
-  overflow: visible; /* Prevents Select dropdown from being clipped */
+  overflow: visible; 
 }
 
 .search-input-wrapper {
@@ -175,7 +191,6 @@
   pointer-events: none;
 }
 
-/* Force search input to match Select trigger height (~38px) */
 .sort-regex-wrapper .search-input {
   padding-top: 8px;
   padding-bottom: 8px;
@@ -194,7 +209,7 @@
   transition: all 0.2s ease;
   user-select: none;
   min-height: 38px;
-  margin-top: auto; /* Push down to align with other inputs */
+  margin-top: auto;
 }
 
 .sort-checkbox-card:hover {

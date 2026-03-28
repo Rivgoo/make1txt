@@ -8,10 +8,30 @@ interface TreeOptions {
 export function generateTextTree(nodes: FileNode[], options: TreeOptions): string {
   const { includeIgnored, symbols } = options;
   
-  const validNodes = includeIgnored 
+  let validNodes = includeIgnored 
     ? nodes 
     : nodes.filter(n => n.isSelected && !n.isIgnored);
     
+  if (validNodes.length === 0) return '';
+
+  const parentMap = new Map<string, string | null>();
+  for (const node of validNodes) {
+    parentMap.set(node.id, node.parentId);
+  }
+
+  const dirHasFiles = new Set<string>();
+  for (const node of validNodes) {
+    if (!node.isDirectory) {
+      let currentParent = node.parentId;
+      while (currentParent && !dirHasFiles.has(currentParent)) {
+        dirHasFiles.add(currentParent);
+        currentParent = parentMap.get(currentParent) || null;
+      }
+    }
+  }
+
+  validNodes = validNodes.filter(n => !n.isDirectory || dirHasFiles.has(n.id));
+
   if (validNodes.length === 0) return '';
 
   const childrenMap = new Map<string | null, FileNode[]>();
