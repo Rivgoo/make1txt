@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, 
-  IconFileText, IconInfoCircle, IconEye, IconMapPin, IconMapPinOff 
+  IconFileText, IconInfoCircle, IconEye, IconEyeOff, IconMapPin, IconMapPinOff 
 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
@@ -21,7 +21,7 @@ interface FileTreeNodeProps {
 
 export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect, onContextMenu }: FileTreeNodeProps) {
   const { t } = useTranslation();
-  const { localFilters, setPreviewNode, toggleLocalPathIgnore } = useFileStore();
+  const { localFilters, previewNode, setPreviewNode, toggleLocalPathIgnore } = useFileStore();
   const { showToast } = useToast();
   const paddingLeft = node.depth * 16 + 8;
   const checkboxRef = useRef<HTMLInputElement>(null);
@@ -39,6 +39,7 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
 
   const localPatternCheck = node.relativePath;
   const isLocallyIgnored = localFilters.customPatterns.some(p => p.pattern === localPatternCheck && p.isActive);
+  const isPreviewing = previewNode?.id === node.id;
 
   useEffect(() => {
     if (checkboxRef.current) {
@@ -76,9 +77,13 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
     }
   };
 
-  const handlePreview = (e: React.MouseEvent) => {
+  const handleTogglePreview = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setPreviewNode(node);
+    if (isPreviewing) {
+      setPreviewNode(null);
+    } else {
+      setPreviewNode(node);
+    }
   };
 
   let iconColor = "inherit";
@@ -172,12 +177,12 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
         
         {!node.isDirectory && (
           <button 
-            className="tree-node-action-btn" 
-            data-tooltip={t('browser.viewContent')}
+            className={`tree-node-action-btn ${isPreviewing ? 'active-preview' : ''}`} 
+            data-tooltip={isPreviewing ? t('browser.closeContent') : t('browser.viewContent')}
             data-tooltip-pos="top"
-            onClick={handlePreview}
+            onClick={handleTogglePreview}
           >
-            <IconEye size={14} />
+            {isPreviewing ? <IconEyeOff size={14} /> : <IconEye size={14} />}
           </button>
         )}
         

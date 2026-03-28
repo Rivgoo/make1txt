@@ -68,6 +68,7 @@ export const en = {
     modified: 'Modified',
     actions: 'Actions',
     viewContent: 'View Content',
+    closeContent: 'Close Preview',
     copyPath: 'Copy Relative Path',
     select: 'Select',
     deselect: 'Deselect',

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconFolder, IconFileText, IconCircleCheck, IconCircleDashed, 
   IconWeight, IconClock, IconRoute, IconFiles, IconLoader2, IconX, 
-  IconEye, IconWorld, IconMapPin, IconMapPinOff, IconCopy, IconCpu
+  IconEye, IconEyeOff, IconWorld, IconMapPin, IconMapPinOff, IconCopy, IconCpu
 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
@@ -28,7 +28,7 @@ interface MetaData {
 export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContextMenuProps) {
   const { t } = useTranslation();
   const { 
-    toggleSelection, nodes, setPreviewNode, globalSettings, updateGlobalSettings, 
+    toggleSelection, nodes, previewNode, setPreviewNode, globalSettings, updateGlobalSettings, 
     localFilters, toggleExtension, toggleLocalPathIgnore
   } = useFileStore();
   
@@ -45,6 +45,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
 
   const localPatternCheck = node.relativePath;
   const isLocallyIgnored = localFilters.customPatterns.some(p => p.pattern === localPatternCheck && p.isActive);
+  const isPreviewing = previewNode?.id === node.id;
 
   useLayoutEffect(() => {
     if (!menuRef.current) return;
@@ -111,8 +112,12 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
     onClose();
   };
 
-  const handlePreview = () => {
-    setPreviewNode(node);
+  const handleTogglePreview = () => {
+    if (isPreviewing) {
+      setPreviewNode(null);
+    } else {
+      setPreviewNode(node);
+    }
     onClose();
   };
 
@@ -172,8 +177,9 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
             <div className="context-menu-section-title">{t('browser.actions')}</div>
             
             {!node.isDirectory && (
-              <button className="context-menu-action" onClick={handlePreview}>
-                <IconEye size={18} /> {t('browser.viewContent')}
+              <button className="context-menu-action" onClick={handleTogglePreview}>
+                {isPreviewing ? <IconEyeOff size={18} /> : <IconEye size={18} />} 
+                {isPreviewing ? t('browser.closeContent') : t('browser.viewContent')}
               </button>
             )}
 

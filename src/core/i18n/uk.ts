@@ -68,6 +68,7 @@ export const uk = {
     modified: 'Змінено',
     actions: 'Дії',
     viewContent: 'Переглянути вміст',
+    closeContent: 'Закрити перегляд',
     copyPath: 'Скопіювати відносний шлях',
     select: 'Виділити',
     deselect: 'Зняти виділення',
