@@ -96,18 +96,28 @@ export function createIgnoreRegexes(gitignoreContent: string): RegExp[] {
 
 export function compileGlobToRegex(pattern: string): RegExp {
   let cleaned = pattern.trim();
+  
   if (cleaned.endsWith('/')) {
     cleaned = cleaned.slice(0, -1);
   }
 
-  const escaped = cleaned.replace(/[.+^${}()|\\]/g, '\\$&');
+  const isRootAnchored = cleaned.startsWith('/');
+  if (isRootAnchored) {
+    cleaned = cleaned.substring(1);
+  }
+
+  const escaped = cleaned.replace(/[.+^${}()|[\]\\]/g, '\\$&');
 
   const regexStr = escaped
     .replace(/\*\*/g, '.*')       
     .replace(/\*/g, '[^/]*')      
     .replace(/\?/g, '[^/]');      
 
-  return new RegExp(`(^|/)${regexStr}($|/)`);
+  // ^([^/]+/)? gracefully bypasses the injected root folder name (e.g. "sim/")
+  // while strictly anchoring the rest of the pattern to the virtual root.
+  const prefix = isRootAnchored ? '^([^/]+/)?' : '(^|/)';
+
+  return new RegExp(`${prefix}${regexStr}($|/)`);
 }
 
 export function isValidGlobOrRegex(pattern: string): boolean {
