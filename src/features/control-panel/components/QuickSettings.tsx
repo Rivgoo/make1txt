@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
-  IconBrandGit, IconFileCode, IconFilter, 
+  IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
   IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin, IconFolderOff, IconAlertCircle, IconLoader2
 } from '@tabler/icons-react';
@@ -162,16 +162,6 @@ export function QuickSettings() {
       </div>
 
       <div className="qs-section">
-        <div 
-          className={`toggle-row ${localFilters.hasGitignore ? (localFilters.useGitignore ? 'active' : '') : 'disabled'}`}
-          onClick={() => localFilters.hasGitignore && updateLocalFilters({ useGitignore: !localFilters.useGitignore })}
-          data-tooltip={!localFilters.hasGitignore ? t('quickSettings.noGitignore') : ''}
-          data-tooltip-pos="top"
-        >
-          <span className="qs-title"><IconBrandGit size={16}/> {t('quickSettings.useGitignore')}</span>
-          <div className="toggle-switch" />
-        </div>
-
         {!globalSettings.pruneIgnoredOnRead && (
           <div 
             className={`toggle-row ${localFilters.showGloballyIgnored ? 'active' : ''}`}

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
-  IconRestore, IconDatabase, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree, 
-  IconLanguage, IconLayoutNavbar, IconLayoutBottombar 
+  IconRestore, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree, 
+  IconLanguage, IconLayoutNavbar, IconLayoutBottombar, IconFilter, IconBrandGit 
 } from '@tabler/icons-react';
 import { Modal } from '@/shared/ui/Modal/Modal';
 import { Button } from '@/shared/ui/Button/Button';
@@ -203,28 +203,29 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
             />
           </div>
 
-          <label className="as-checkbox-row" style={{ marginTop: 'var(--spacing-sm)' }}>
-            <input 
-              type="checkbox"
-              style={{ accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
-              checked={local.pruneIgnoredOnRead}
-              onChange={(e) => setLocal({ ...local, pruneIgnoredOnRead: e.target.checked })}
-            />
-            {t('settings.labels.pruneIgnored')}
-          </label>
-        </div>
+          <div className="as-grid" style={{ marginTop: 'var(--spacing-md)' }}>
+            <label className={`as-checkbox-card ${local.pruneIgnoredOnRead ? 'is-active' : ''}`}>
+              <IconFilter size={18} className="as-checkbox-icon" />
+              <span className="as-checkbox-label">{t('settings.labels.pruneIgnored')}</span>
+              <input 
+                type="checkbox" 
+                checked={local.pruneIgnoredOnRead} 
+                onChange={(e) => setLocal({ ...local, pruneIgnoredOnRead: e.target.checked })} 
+                className="as-checkbox-input"
+              />
+            </label>
 
-        <div className="as-section">
-          <h4><IconDatabase size={18}/> {t('settings.sections.behavior')}</h4>
-          <label className="as-checkbox-row">
-            <input 
-              type="checkbox"
-              style={{ accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
-              checked={local.useGitignoreDefault}
-              onChange={(e) => setLocal({ ...local, useGitignoreDefault: e.target.checked })}
-            />
-            {t('settings.labels.useGitignore')}
-          </label>
+            <label className={`as-checkbox-card ${local.useGitignore ? 'is-active' : ''}`}>
+              <IconBrandGit size={18} className="as-checkbox-icon" />
+              <span className="as-checkbox-label">{t('settings.labels.useGitignore')}</span>
+              <input 
+                type="checkbox" 
+                checked={local.useGitignore} 
+                onChange={(e) => setLocal({ ...local, useGitignore: e.target.checked })} 
+                className="as-checkbox-input"
+              />
+            </label>
+          </div>
         </div>
 
         <div className="as-section">

@@ -104,7 +104,6 @@ export const en = {
     resetConfirm: 'Are you sure you want to reset all global settings to their defaults?',
     sections: {
       limits: 'Exclusions & Limits',
-      behavior: 'General Behavior',
       structure: 'File Structure Options',
       formatting: 'Output Formatting'
     },
@@ -112,8 +111,8 @@ export const en = {
       globalExts: 'Globally ignored extensions',
       globalPaths: 'Globally ignored directories',
       maxFileSize: 'Maximum file size (KB) [0 = unlimited]',
-      pruneIgnored: 'Prune globally ignored items during scan (improves performance)',
-      useGitignore: 'Use .gitignore by default (if found)',
+      pruneIgnored: 'Prune globally ignored items during scan',
+      useGitignore: 'Respect .gitignore (Global)',
       structurePlacement: 'Structure position in the final file',
       placementTop: 'At the beginning (Top)',
       placementBottom: 'At the end (Bottom)',
@@ -156,8 +155,6 @@ export const en = {
     ruleAdded: 'Path "{{pattern}}" added to exclusions.',
     ruleRemoved: 'Path "{{pattern}}" removed from exclusions.',
     ruleRejected: 'Expression rejected.',
-    useGitignore: 'Respect .gitignore',
-    noGitignore: '.gitignore file not found',
     showGloballyIgnored: 'Show globally ignored',
     showLocallyIgnored: 'Show locally ignored',
     showEmptyFolders: 'Show empty folders',

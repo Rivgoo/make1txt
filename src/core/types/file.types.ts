@@ -41,7 +41,7 @@ export interface GlobalSettings {
   maxFileSizeKb: number;
   ignoredExtensions: string[];
   ignoredPaths: string[];
-  useGitignoreDefault: boolean;
+  useGitignore: boolean;
   pruneIgnoredOnRead: boolean;
   outputTemplate: string;
   treePlacement: 'top' | 'bottom';
@@ -63,8 +63,6 @@ export interface ExtensionStat {
 export interface LocalFilters {
   extensions: Record<string, ExtensionStat>;
   customPatterns: CustomPattern[];
-  useGitignore: boolean;
-  hasGitignore: boolean;
   showGloballyIgnored: boolean;
   showLocallyIgnored: boolean;
   showEmptyFolders: boolean;
@@ -75,7 +73,6 @@ export interface LocalFilters {
 export interface SavedLocalFilters {
   hiddenExtensions: string[];
   customPatterns: CustomPattern[];
-  useGitignore: boolean;
   showGloballyIgnored: boolean;
   showLocallyIgnored: boolean;
   showEmptyFolders: boolean;

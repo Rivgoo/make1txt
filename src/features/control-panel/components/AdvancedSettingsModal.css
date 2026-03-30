@@ -60,14 +60,52 @@
   font-family: monospace;
 }
 
-.as-checkbox-row {
+.as-checkbox-card {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
+  gap: 8px;
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  min-height: 40px;
+}
+
+.as-checkbox-card:hover {
+  background-color: var(--bg-hover);
+}
+
+.as-checkbox-card.is-active {
+  background-color: rgba(255, 122, 0, 0.08);
+  border-color: rgba(255, 122, 0, 0.4);
+}
+
+.as-checkbox-icon {
+  color: var(--text-muted);
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.as-checkbox-card.is-active .as-checkbox-icon {
+  color: var(--accent-primary);
+}
+
+.as-checkbox-label {
+  flex: 1;
   font-size: 0.85rem;
   color: var(--text-primary);
+}
+
+.as-checkbox-input {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
   cursor: pointer;
-  user-select: none;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .as-tag-container {

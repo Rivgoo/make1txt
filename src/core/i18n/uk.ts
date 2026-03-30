@@ -104,7 +104,6 @@ export const uk = {
     resetConfirm: 'Ви дійсно бажаєте скинути всі глобальні налаштування до стандартних?',
     sections: {
       limits: 'Виключення та ліміти',
-      behavior: 'Загальна поведінка',
       structure: 'Відображення структури файлів',
       formatting: 'Форматування виводу'
     },
@@ -112,8 +111,8 @@ export const uk = {
       globalExts: 'Глобально ігноровані розширення',
       globalPaths: 'Глобально ігноровані директорії',
       maxFileSize: 'Максимальний розмір файлу (КБ) [0 = без ліміту]',
-      pruneIgnored: 'Відсікати глобально ігноровані елементи під час сканування (покращує продуктивність)',
-      useGitignore: 'Використовувати .gitignore за замовчуванням (якщо знайдено)',
+      pruneIgnored: 'Відсікати глобально ігноровані елементи під час сканування',
+      useGitignore: 'Враховувати .gitignore (Глобально)',
       structurePlacement: 'Позиція структури у фінальному файлі',
       placementTop: 'На початку (Зверху)',
       placementBottom: 'В кінці (Знизу)',
@@ -156,8 +155,6 @@ export const uk = {
     ruleAdded: 'Шлях "{{pattern}}" додано до ігнорування.',
     ruleRemoved: 'Шлях "{{pattern}}" видалено з ігнорування.',
     ruleRejected: 'Вираз відхилено.',
-    useGitignore: 'Враховувати .gitignore',
-    noGitignore: 'Файл .gitignore не знайдено',
     showGloballyIgnored: 'Показати глобально ігноровані',
     showLocallyIgnored: 'Показати локально ігноровані',
     showEmptyFolders: 'Показати порожні папки',
