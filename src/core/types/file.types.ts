@@ -1,3 +1,5 @@
+import type { OptimizationRule } from './optimization.types';
+
 export interface FileSystemHandle {
   readonly kind: 'file' | 'directory';
   readonly name: string;
@@ -23,7 +25,9 @@ export interface GeneratorStats {
   totalFiles: number;
   selectedFiles: number;
   totalSizeBytes: number;
+  totalOptimizedBytes: number;
   totalWords: number;
+  baseTokens: number;
   tokens: number;
   isExactTokens: boolean;
 }
@@ -68,6 +72,9 @@ export interface LocalFilters {
   showEmptyFolders: boolean;
   generateTree: boolean;
   treeIncludeIgnored: boolean;
+  isOptimizationEnabled: boolean;
+  isOptimizationDirty: boolean;
+  optimizationRules: OptimizationRule[];
 }
 
 export interface SavedLocalFilters {
@@ -78,6 +85,9 @@ export interface SavedLocalFilters {
   showEmptyFolders: boolean;
   generateTree: boolean;
   treeIncludeIgnored: boolean;
+  isOptimizationEnabled: boolean;
+  isOptimizationDirty?: boolean;
+  optimizationRules: OptimizationRule[];
 }
 
 export interface Profile {

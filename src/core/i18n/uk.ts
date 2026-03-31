@@ -28,7 +28,9 @@ export const uk = {
     generateResult: 'Згенерувати результат',
     cancelGeneration: 'Скасувати',
     generating: 'Генерація...',
-    progress: '{{percent}}%'
+    progress: '{{percent}}%',
+    emptyStateTitle: 'Директорію не обрано',
+    emptyStateDesc: 'Завантажте директорію проекту, щоб отримати доступ до налаштувань, фільтрів та правил оптимізації.'
   },
   stats: {
     title: 'Статистика файлів',
@@ -163,6 +165,8 @@ export const uk = {
     tokenWarningTitle: 'Знайдено великий проект',
     tokenWarningDesc: 'Показані приблизні токени, оскільки вибір перевищує 1М токенів. Точний підрахунок може зайняти час.',
     calculateExact: 'Порахувати точні токени',
+    tokenCalcTitle: 'Підрахунок токенів',
+    tokenCalcDesc: 'Будь ласка, зачекайте, поки ми обробляємо файли для точного підрахунку токенів.',
     calculatingTokens: 'Рахуємо точні токени...'
   },
   generator: {
@@ -179,5 +183,23 @@ export const uk = {
     largeWarningDesc: 'Загальний розмір файлу — {{size}}. Показано частковий перегляд, щоб уникнути зависання браузера.',
     showAll: 'Показати все (може викликати зависання)',
     truncatedMark: '\n\n... [ПЕРЕГЛЯД ОБРІЗАНО] ...\n'
+  },
+  optimization: {
+    title: 'Очищення та оптимізація',
+    enable: 'Увімкнути оптимізацію',
+    predefined: 'Стандартні правила',
+    custom: 'Власні Regex правила',
+    patternPlaceholder: 'Regex (напр. console\\.log.*)',
+    replacePlaceholder: 'Заміна (напр. \\n)',
+    addRule: 'Додати',
+    invalidRegex: 'Невірний Regex патерн.',
+    run: 'Запустити оптимізацію',
+    apply: 'Застосувати зміни',
+    dirtyWarning: 'Є незастосовані зміни',
+    filesOptimizedTooltip: 'Оптимізованих файлів у директорії',
+    saved: 'Заощаджено місця',
+    optimizedSize: 'Оптимізований розмір',
+    tokensSaved: 'Токенів заощаджено',
+    optimized: 'Оптимізовано'
   }
 };

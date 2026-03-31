@@ -13,7 +13,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-  min-width: 550px; /* Wider for 2 columns */
+  min-width: 550px;
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;

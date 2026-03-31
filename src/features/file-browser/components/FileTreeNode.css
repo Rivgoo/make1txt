@@ -77,6 +77,9 @@
   white-space: nowrap;
   margin-right: var(--spacing-lg);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .tree-node-meta-mixed {
@@ -185,4 +188,35 @@
 .tree-node--unselected:hover .tree-node-tokens-selected {
   color: var(--text-muted) !important;
   text-shadow: none;
+}
+
+.opt-strikethrough {
+  text-decoration: line-through;
+  opacity: 0.6;
+  color: var(--text-primary);
+}
+
+.opt-success {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.opt-percent {
+  font-size: 0.7rem;
+  color: var(--success);
+  opacity: 0.8;
+}
+
+.opt-arrow {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  margin: 0 2px;
+}
+
+.opt-wand-icon {
+  margin-left: 8px;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
 }

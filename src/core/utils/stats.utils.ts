@@ -15,11 +15,6 @@ export function formatFileSize(bytes: number): string {
   return `${formatted} ${units[unitIndex]}`;
 }
 
-/**
- * Estimates token count from a character length.
- * Accepts either a plain char count or a byte size — both give a rough
- * approximation that is good enough for the stats panel.
- */
 export function estimateTokenCount(charOrByteLength: number): number {
   return Math.ceil(charOrByteLength / CHARS_PER_TOKEN);
 }
@@ -34,4 +29,14 @@ export function getFileExtension(filename: string): string {
   const idx = filename.lastIndexOf('.');
   if (idx <= 0 || idx === filename.length - 1) return 'no-extension';
   return filename.slice(idx).toLowerCase();
+}
+
+/**
+ * Checks if the optimization resulted in a meaningful reduction.
+ * Threshold is set to 1% (> 0.01).
+ */
+export function hasMeaningfulOptimization(original: number, optimized: number): boolean {
+  if (original <= 0 || optimized >= original) return false;
+  const saved = original - optimized;
+  return (saved / original) > 0.01;
 }

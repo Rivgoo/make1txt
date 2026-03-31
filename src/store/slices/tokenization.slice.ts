@@ -6,24 +6,33 @@ import { MAX_AUTO_TOKENS } from '../constants';
 
 export const createTokenizationSlice: StateCreator<FileStore, [], [], TokenizationSlice> = (set, get) => ({
   realTokenMap: {},
+  optimizedBytesMap: {},
   isTokenizing: false,
   tokenizationProgress: 0,
   needsManualTokenization: false,
   tokenizerWorker: null,
 
+  invalidateTokens: () => {
+    set({ realTokenMap: {}, optimizedBytesMap: {}, needsManualTokenization: false });
+  },
+
   evaluateTokenization: () => {
-    const { nodes, isTokenizing } = get();
+    const { nodes, isTokenizing, localFilters, optimizedBytesMap } = get();
     if (isTokenizing) return;
 
     let estimatedTokens = 0;
     for (const node of nodes) {
       if (!node.isDirectory && node.isSelected && !node.isIgnored) {
-        estimatedTokens += estimateTokenCount(node.sizeBytes);
+        const bytes = (localFilters?.isOptimizationEnabled && optimizedBytesMap[node.id]) 
+          ? optimizedBytesMap[node.id] 
+          : node.sizeBytes;
+        estimatedTokens += estimateTokenCount(bytes);
       }
     }
 
     if (estimatedTokens >= MAX_AUTO_TOKENS) {
       set({ needsManualTokenization: true });
+      get().runTokenization(false); // Force run for bytes only
     } else if (estimatedTokens > 0) {
       set({ needsManualTokenization: false });
       get().runTokenization(false);
@@ -38,12 +47,15 @@ export const createTokenizationSlice: StateCreator<FileStore, [], [], Tokenizati
     }
   },
 
-  runTokenization: () => {
-    const { nodes, isTokenizing, realTokenMap } = get();
+  runTokenization: (force: boolean) => {
+    const { nodes, isTokenizing, realTokenMap, optimizedBytesMap, localFilters, needsManualTokenization } = get();
     if (isTokenizing) return;
 
+    const skipTiktoken = !force && needsManualTokenization;
+
     const filesToTokenize = nodes
-      .filter(n => !n.isDirectory && n.isSelected && !n.isIgnored && realTokenMap[n.id] === undefined)
+      .filter(n => !n.isDirectory && n.isSelected && !n.isIgnored && 
+        (realTokenMap[n.id] === undefined || optimizedBytesMap[n.id] === undefined))
       .map(n => ({ id: n.id, handle: n.handle as FileSystemFileHandle }));
 
     if (filesToTokenize.length === 0) return;
@@ -56,7 +68,7 @@ export const createTokenizationSlice: StateCreator<FileStore, [], [], Tokenizati
       isTokenizing: true, 
       tokenizationProgress: 0, 
       tokenizerWorker: worker,
-      needsManualTokenization: false 
+      needsManualTokenization: skipTiktoken 
     });
 
     worker.onmessage = (e: MessageEvent<TokenizerOutput>) => {
@@ -64,8 +76,19 @@ export const createTokenizationSlice: StateCreator<FileStore, [], [], Tokenizati
       if (data.type === 'progress') {
         set({ tokenizationProgress: data.progress });
       } else if (data.type === 'result') {
+        const newTokens: Record<string, number> = {};
+        const newBytes: Record<string, number> = {};
+        
+        for (const [id, res] of Object.entries(data.results)) {
+          if (!res.skippedTiktoken) {
+            newTokens[id] = res.tokens;
+          }
+          newBytes[id] = res.optimizedBytes;
+        }
+
         set(state => ({
-          realTokenMap: { ...state.realTokenMap, ...data.results },
+          realTokenMap: { ...state.realTokenMap, ...newTokens },
+          optimizedBytesMap: { ...state.optimizedBytesMap, ...newBytes },
           isTokenizing: false,
           tokenizationProgress: 100,
           tokenizerWorker: null
@@ -78,6 +101,11 @@ export const createTokenizationSlice: StateCreator<FileStore, [], [], Tokenizati
       }
     };
 
-    worker.postMessage({ files: filesToTokenize } as TokenizerInput);
+    worker.postMessage({ 
+      files: filesToTokenize,
+      isOptimizationEnabled: localFilters?.isOptimizationEnabled ?? false,
+      optimizationRules: localFilters?.optimizationRules ?? [],
+      skipTiktoken
+    } as TokenizerInput);
   }
 });

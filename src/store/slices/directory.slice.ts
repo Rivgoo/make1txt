@@ -6,6 +6,7 @@ import { createIgnoreRegexes, isPathGloballyIgnored } from '@/core/services/Igno
 import { getFileExtension } from '@/core/utils/stats.utils';
 import { buildExtMap, recompileAndRecalculate } from '../helpers/node.helper';
 import { saveGlobalSettings } from '../helpers/settings.helper';
+import { PREDEFINED_OPTIMIZATION_RULES } from '@/core/constants/optimization.constants';
 
 export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlice> = (set, get) => ({
   nodes: [],
@@ -47,6 +48,7 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
       previewNode: null, 
       abortController: controller,
       realTokenMap: {},
+      optimizedBytesMap: {},
       needsManualTokenization: false
     });
     
@@ -127,6 +129,8 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           showEmptyFolders: savedFilters.showEmptyFolders ?? false,
           generateTree: savedFilters.generateTree ?? true,
           treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false,
+          isOptimizationEnabled: savedFilters.isOptimizationEnabled ?? false,
+          optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
         };
       }
 
@@ -143,6 +147,8 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           showEmptyFolders: localFiltersToApply.showEmptyFolders ?? false,
           generateTree: localFiltersToApply.generateTree ?? true,
           treeIncludeIgnored: localFiltersToApply.treeIncludeIgnored ?? false,
+          isOptimizationEnabled: localFiltersToApply.isOptimizationEnabled ?? false,
+          optimizationRules: localFiltersToApply.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
         },
         nodes: rawNodes,
         isLoading: false,

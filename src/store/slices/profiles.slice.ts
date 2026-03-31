@@ -4,6 +4,7 @@ import type { Profile } from '@/core/types/file.types';
 import { dbService } from '@/core/services/DatabaseService';
 import { recompileAndRecalculate } from '../helpers/node.helper';
 import { saveGlobalSettings } from '../helpers/settings.helper';
+import { PREDEFINED_OPTIMIZATION_RULES } from '@/core/constants/optimization.constants';
 
 export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice> = (set, get) => ({
   profiles: [],
@@ -34,7 +35,9 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
         showLocallyIgnored: localFilters.showLocallyIgnored,
         showEmptyFolders: localFilters.showEmptyFolders,
         generateTree: localFilters.generateTree,
-        treeIncludeIgnored: localFilters.treeIncludeIgnored
+        treeIncludeIgnored: localFilters.treeIncludeIgnored,
+        isOptimizationEnabled: localFilters.isOptimizationEnabled,
+        optimizationRules: localFilters.optimizationRules
       }
     };
 
@@ -68,7 +71,9 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
           showLocallyIgnored: savedFilters.showLocallyIgnored ?? true,
           showEmptyFolders: savedFilters.showEmptyFolders ?? false,
           generateTree: savedFilters.generateTree ?? true,
-          treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false
+          treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false,
+          isOptimizationEnabled: savedFilters.isOptimizationEnabled ?? false,
+          optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
         };
 
         const tempState = { ...state, globalSettings: profile.settings, localFilters: newLocalFilters };

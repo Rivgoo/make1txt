@@ -28,7 +28,9 @@ export const en = {
     generateResult: 'Generate Result',
     cancelGeneration: 'Cancel',
     generating: 'Generating...',
-    progress: '{{percent}}%'
+    progress: '{{percent}}%',
+    emptyStateTitle: 'No Directory Selected',
+    emptyStateDesc: 'Load a project directory to access settings, filters, and optimization rules.'
   },
   stats: {
     title: 'File Statistics',
@@ -163,6 +165,8 @@ export const en = {
     tokenWarningTitle: 'Large Project Detected',
     tokenWarningDesc: 'Showing estimated tokens because the selection exceeds 1M tokens. Calculating exact tokens may take time.',
     calculateExact: 'Calculate Exact Tokens',
+    tokenCalcTitle: 'Calculating Tokens',
+    tokenCalcDesc: 'Please wait while we process the files to get exact token counts.',
     calculatingTokens: 'Calculating exact tokens...'
   },
   generator: {
@@ -179,5 +183,23 @@ export const en = {
     largeWarningDesc: 'Total file size is {{size}}. Showing a partial preview to prevent browser lag.',
     showAll: 'Show All Content (May freeze browser)',
     truncatedMark: '\n\n... [PREVIEW TRUNCATED] ...\n'
+  },
+  optimization: {
+    title: 'Code Cleanup & Optimization',
+    enable: 'Enable Optimization',
+    predefined: 'Predefined Rules',
+    custom: 'Custom Regex Rules',
+    patternPlaceholder: 'Regex (e.g. console\\.log.*)',
+    replacePlaceholder: 'Replacement (e.g. \\n)',
+    addRule: 'Add',
+    invalidRegex: 'Invalid Regex pattern.',
+    run: 'Run Optimization',
+    apply: 'Apply Changes',
+    dirtyWarning: 'Unapplied changes',
+    filesOptimizedTooltip: 'Optimized files in directory',
+    saved: 'Saved Space',
+    optimizedSize: 'Optimized Size',
+    tokensSaved: 'Tokens Saved',
+    optimized: 'Optimized'
   }
 };

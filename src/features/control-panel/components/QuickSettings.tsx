@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
-  IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin, IconFolderOff, IconAlertCircle, IconLoader2
+  IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin, IconFolderOff, IconAlertCircle, IconLoader2,
+  IconWand, IconChevronDown, IconChevronRight, IconRegex
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -14,9 +15,10 @@ import './QuickSettings.css';
 export function QuickSettings() {
   const { t } = useTranslation();
   const { 
-    localFilters, updateLocalFilters, toggleExtension, setAllExtensionsState, 
+    nodes, localFilters, updateLocalFilters, toggleExtension, setAllExtensionsState, 
     addCustomPattern, updateCustomPattern, toggleCustomPattern, removeCustomPattern, moveCustomPattern,
-    globalSettings, needsManualTokenization, isTokenizing, runTokenization
+    globalSettings, needsManualTokenization, isTokenizing, runTokenization,
+    toggleOptimization, toggleOptimizationRule, addCustomOptimizationRule, removeCustomOptimizationRule, applyOptimization
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -25,8 +27,12 @@ export function QuickSettings() {
   const [editingPatternId, setEditingPatternId] = useState<string | null>(null);
   const [editPatternValue, setEditPatternValue] = useState('');
 
-  const sortedExtensions = Object.entries(localFilters.extensions)
-    .sort((a, b) => b[1].count - a[1].count);
+  const [isOptExpanded, setIsOptExpanded] = useState(false);
+  const [newOptPattern, setNewOptPattern] = useState('');
+  const [newOptReplace, setNewOptReplace] = useState('');
+
+  const extensions = localFilters?.extensions || {};
+  const sortedExtensions = Object.entries(extensions).sort((a, b) => b[1].count - a[1].count);
 
   const handleAddPattern = () => {
     if (!newPattern.trim()) return;
@@ -56,14 +62,50 @@ export function QuickSettings() {
     setEditingPatternId(null);
   };
 
+  const handleAddOptRule = () => {
+    if (!newOptPattern.trim()) return;
+    try {
+      new RegExp(newOptPattern);
+      addCustomOptimizationRule({
+        name: newOptPattern,
+        category: 'custom',
+        isActive: true,
+        pattern: newOptPattern,
+        flags: 'gm',
+        replacement: newOptReplace
+      });
+      setNewOptPattern('');
+      setNewOptReplace('');
+    } catch {
+      showToast('error', t('common.error'), t('optimization.invalidRegex'));
+    }
+  };
+
+  const optRules = localFilters?.optimizationRules || [];
+  const predefinedRules = optRules.filter(r => r.isPredefined);
+  const customRules = optRules.filter(r => !r.isPredefined);
+  const customPatterns = localFilters?.customPatterns || [];
+
   return (
     <div className="quick-settings">
 
-      {(needsManualTokenization || isTokenizing) && (
+      {isTokenizing ? (
+        <div className="qs-section" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', borderColor: 'var(--success)' }}>
+          <div className="qs-header">
+            <span className="qs-title" style={{ color: 'var(--success)' }}>
+              <IconLoader2 size={16} className="spin" />
+              {t('quickSettings.tokenCalcTitle')}
+            </span>
+          </div>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {t('quickSettings.tokenCalcDesc')}
+          </p>
+        </div>
+      ) : needsManualTokenization ? (
         <div className="qs-section" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', borderColor: 'var(--warning)' }}>
           <div className="qs-header">
             <span className="qs-title" style={{ color: 'var(--warning)' }}>
-              {isTokenizing ? <IconLoader2 size={16} className="spin" /> : <IconAlertCircle size={16} />} 
+              <IconAlertCircle size={16} /> 
               {t('quickSettings.tokenWarningTitle')}
             </span>
           </div>
@@ -73,14 +115,13 @@ export function QuickSettings() {
           <Button 
             variant="secondary" 
             onClick={() => runTokenization(true)} 
-            disabled={isTokenizing}
             style={{ marginTop: 'var(--spacing-xs)', borderColor: 'var(--warning)', color: 'var(--warning)' }}
           >
-            {isTokenizing ? t('quickSettings.calculatingTokens') : t('quickSettings.calculateExact')}
+            {t('quickSettings.calculateExact')}
           </Button>
         </div>
-      )}
-      
+      ) : null}
+
       {sortedExtensions.length > 0 && (
         <div className="qs-section">
           <div className="qs-header">
@@ -114,9 +155,9 @@ export function QuickSettings() {
           <span className="qs-title"><IconFilter size={16}/> {t('quickSettings.customRules')}</span>
         </div>
         
-        {localFilters.customPatterns.length > 0 && (
+        {customPatterns.length > 0 && (
           <div className="patterns-list">
-            {localFilters.customPatterns.map((p) => (
+            {customPatterns.map((p) => (
               <div key={p.id} className={`pattern-item ${p.isActive ? '' : 'inactive'}`}>
                 {editingPatternId === p.id ? (
                   <input 
@@ -162,10 +203,107 @@ export function QuickSettings() {
       </div>
 
       <div className="qs-section">
+        <div 
+          className={`qs-opt-header ${isOptExpanded ? 'expanded' : ''}`} 
+          onClick={() => setIsOptExpanded(!isOptExpanded)}
+        >
+          <div className="qs-opt-title-group">
+            <IconWand size={18} color="var(--accent-primary)" />
+            <span>{t('optimization.title')}</span>
+          </div>
+          {isOptExpanded ? <IconChevronDown size={16} className="opt-expand-icon" /> : <IconChevronRight size={16} className="opt-expand-icon" />}
+        </div>
+
+        {isOptExpanded && (
+          <div className="qs-opt-body">
+            
+            {localFilters?.isOptimizationDirty && nodes.length > 0 && (
+              <div className="opt-apply-row">
+                <span className="opt-apply-text">
+                  <IconAlertCircle size={16} /> 
+                  {t('optimization.dirtyWarning')}
+                </span>
+                <Button variant="primary" onClick={applyOptimization} disabled={isTokenizing}>
+                  {isTokenizing ? <IconLoader2 size={16} className="spin" /> : <IconWand size={16} />}
+                  {t('optimization.apply')}
+                </Button>
+              </div>
+            )}
+
+            <div 
+              className={`toggle-row ${localFilters?.isOptimizationEnabled ? 'active' : ''}`}
+              onClick={() => toggleOptimization(!localFilters?.isOptimizationEnabled)}
+            >
+              <span className="qs-title">{t('optimization.enable')}</span>
+              <div className="toggle-switch" />
+            </div>
+
+            <div className={`opt-rule-group ${!localFilters?.isOptimizationEnabled ? 'disabled' : ''}`} style={{ opacity: localFilters?.isOptimizationEnabled ? 1 : 0.5, pointerEvents: localFilters?.isOptimizationEnabled ? 'auto' : 'none' }}>
+              
+              <span className="opt-rule-group-title">{t('optimization.predefined')}</span>
+              <div className="opt-chips-container">
+                {predefinedRules.map(rule => (
+                  <button 
+                    key={rule.id}
+                    className={`opt-chip ${rule.isActive ? 'active' : ''}`}
+                    onClick={() => toggleOptimizationRule(rule.id)}
+                  >
+                    {rule.isActive ? <IconChecks size={14} /> : <IconSquareX size={14} />}
+                    {rule.name}
+                  </button>
+                ))}
+              </div>
+
+              <span className="opt-rule-group-title" style={{ marginTop: 'var(--spacing-sm)' }}>{t('optimization.custom')}</span>
+              
+              {customRules.length > 0 && (
+                <div className="opt-custom-list">
+                  {customRules.map(rule => (
+                    <div key={rule.id} className={`opt-custom-item ${rule.isActive ? '' : 'inactive'}`}>
+                      <div style={{ flex: 1, overflow: 'hidden', cursor: 'pointer' }} onClick={() => toggleOptimizationRule(rule.id)}>
+                        <IconRegex size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                        <span className="opt-custom-code">{rule.pattern}</span>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>&rarr;</span>
+                        <span className="opt-custom-code">{rule.replacement || '""'}</span>
+                      </div>
+                      <div className="pattern-actions">
+                        <button className="pattern-btn" onClick={() => toggleOptimizationRule(rule.id)}><IconEyeOff size={14}/></button>
+                        <button className="pattern-btn danger" onClick={() => removeCustomOptimizationRule(rule.id)}><IconTrash size={14}/></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="opt-custom-inputs">
+                <input 
+                  className="opt-input" 
+                  placeholder={t('optimization.patternPlaceholder')}
+                  value={newOptPattern}
+                  onChange={e => setNewOptPattern(e.target.value)}
+                />
+                <input 
+                  className="opt-input" 
+                  placeholder={t('optimization.replacePlaceholder')}
+                  value={newOptReplace}
+                  onChange={e => setNewOptReplace(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddOptRule()}
+                />
+                <button className="pattern-btn" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '0 8px' }} onClick={handleAddOptRule}>
+                  <IconPlus size={16} color="var(--accent-primary)"/>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="qs-section">
         {!globalSettings.pruneIgnoredOnRead && (
           <div 
-            className={`toggle-row ${localFilters.showGloballyIgnored ? 'active' : ''}`}
-            onClick={() => updateLocalFilters({ showGloballyIgnored: !localFilters.showGloballyIgnored })}
+            className={`toggle-row ${localFilters?.showGloballyIgnored ? 'active' : ''}`}
+            onClick={() => updateLocalFilters({ showGloballyIgnored: !localFilters?.showGloballyIgnored })}
           >
             <span className="qs-title"><IconWorld size={16}/> {t('quickSettings.showGloballyIgnored')}</span>
             <div className="toggle-switch" />
@@ -173,16 +311,16 @@ export function QuickSettings() {
         )}
 
         <div 
-          className={`toggle-row ${localFilters.showLocallyIgnored ? 'active' : ''}`}
-          onClick={() => updateLocalFilters({ showLocallyIgnored: !localFilters.showLocallyIgnored })}
+          className={`toggle-row ${localFilters?.showLocallyIgnored ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ showLocallyIgnored: !localFilters?.showLocallyIgnored })}
         >
           <span className="qs-title"><IconMapPin size={16}/> {t('quickSettings.showLocallyIgnored')}</span>
           <div className="toggle-switch" />
         </div>
 
         <div 
-          className={`toggle-row ${localFilters.showEmptyFolders ? 'active' : ''}`}
-          onClick={() => updateLocalFilters({ showEmptyFolders: !localFilters.showEmptyFolders })}
+          className={`toggle-row ${localFilters?.showEmptyFolders ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ showEmptyFolders: !localFilters?.showEmptyFolders })}
         >
           <span className="qs-title"><IconFolderOff size={16}/> {t('quickSettings.showEmptyFolders')}</span>
           <div className="toggle-switch" />
@@ -191,16 +329,16 @@ export function QuickSettings() {
 
       <div className="qs-section">
         <div 
-          className={`toggle-row ${localFilters.generateTree ? 'active' : ''}`}
-          onClick={() => updateLocalFilters({ generateTree: !localFilters.generateTree })}
+          className={`toggle-row ${localFilters?.generateTree ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ generateTree: !localFilters?.generateTree })}
         >
           <span className="qs-title"><IconBinaryTree size={16}/> {t('quickSettings.generateStructure')}</span>
           <div className="toggle-switch" />
         </div>
 
         <div 
-          className={`toggle-row ${!localFilters.generateTree ? 'disabled' : (localFilters.treeIncludeIgnored ? 'active' : '')}`}
-          onClick={() => localFilters.generateTree && updateLocalFilters({ treeIncludeIgnored: !localFilters.treeIncludeIgnored })}
+          className={`toggle-row ${!localFilters?.generateTree ? 'disabled' : (localFilters?.treeIncludeIgnored ? 'active' : '')}`}
+          onClick={() => localFilters?.generateTree && updateLocalFilters({ treeIncludeIgnored: !localFilters?.treeIncludeIgnored })}
         >
           <span className="qs-title"><IconEye size={16}/> {t('quickSettings.structureIncludeIgnored')}</span>
           <div className="toggle-switch" />

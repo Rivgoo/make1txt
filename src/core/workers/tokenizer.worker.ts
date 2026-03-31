@@ -1,10 +1,11 @@
 import { getEncoding } from 'js-tiktoken';
-import type { TokenizerInput, TokenizerOutput } from '../types/worker.types';
+import type { TokenizerInput, TokenizerOutput, TokenizerResult } from '../types/worker.types';
+import { optimizeText } from '../utils/optimization.utils';
 
 const PROGRESS_BATCH = 20;
 
 self.onmessage = async (e: MessageEvent<TokenizerInput>) => {
-  const { files } = e.data;
+  const { files, isOptimizationEnabled, optimizationRules, skipTiktoken } = e.data;
   
   if (!files || files.length === 0) {
     self.postMessage({ type: 'result', results: {} } as TokenizerOutput);
@@ -12,18 +13,36 @@ self.onmessage = async (e: MessageEvent<TokenizerInput>) => {
   }
 
   try {
-    const enc = getEncoding('cl100k_base');
-    const results: Record<string, number> = {};
+    const enc = skipTiktoken ? null : getEncoding('cl100k_base');
+    const results: Record<string, TokenizerResult> = {};
     let processed = 0;
 
     for (const item of files) {
       try {
         const file = await item.handle.getFile();
-        const text = await file.text();
-        const tokens = enc.encode(text).length;
-        results[item.id] = tokens;
+        let text = await file.text();
+        const originalBytes = file.size;
+        let optimizedBytes = originalBytes;
+
+        if (isOptimizationEnabled && optimizationRules && optimizationRules.length > 0) {
+          const optResult = optimizeText(text, optimizationRules, false);
+          text = optResult.optimizedText;
+          optimizedBytes = optResult.optimizedBytes;
+        }
+
+        let tokens = 0;
+        if (!skipTiktoken && enc) {
+          tokens = enc.encode(text).length;
+        }
+        
+        results[item.id] = {
+          tokens,
+          originalBytes,
+          optimizedBytes,
+          skippedTiktoken: !!skipTiktoken
+        };
       } catch (err) {
-        results[item.id] = 0;
+        results[item.id] = { tokens: 0, originalBytes: 0, optimizedBytes: 0, skippedTiktoken: !!skipTiktoken };
         console.warn(`[Tokenizer Worker] Failed to read/tokenize file ${item.id}`, err);
       }
 

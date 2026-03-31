@@ -1,6 +1,7 @@
 import type { 
   FileNode, GeneratorStats, Profile, GlobalSettings, LocalFilters 
 } from '@/core/types/file.types';
+import type { OptimizationRule } from '@/core/types/optimization.types';
 
 export interface FolderStat {
   total: number;
@@ -8,7 +9,9 @@ export interface FolderStat {
   absoluteTotal: number;
   sizeBytes: number;
   selectedSizeBytes: number;
+  selectedOptimizedBytes: number;
   exactTokens?: number;
+  optimizedFilesCount: number;
 }
 
 export interface DirectorySlice {
@@ -61,6 +64,7 @@ export interface SelectionSlice {
 
 export interface TokenizationSlice {
   realTokenMap: Record<string, number>;
+  optimizedBytesMap: Record<string, number>;
   isTokenizing: boolean;
   tokenizationProgress: number;
   needsManualTokenization: boolean;
@@ -69,6 +73,7 @@ export interface TokenizationSlice {
   evaluateTokenization: () => void;
   runTokenization: (force: boolean) => void;
   cancelTokenization: () => void;
+  invalidateTokens: () => void;
 }
 
 export interface ProfilesSlice {
@@ -79,6 +84,15 @@ export interface ProfilesSlice {
   deleteProfile: (id: string) => Promise<void>;
 }
 
+export interface OptimizationSlice {
+  toggleOptimization: (isEnabled: boolean) => void;
+  toggleOptimizationRule: (id: string) => void;
+  addCustomOptimizationRule: (rule: Omit<OptimizationRule, 'id' | 'isPredefined'>) => void;
+  removeCustomOptimizationRule: (id: string) => void;
+  updateCustomOptimizationRule: (id: string, updates: Partial<OptimizationRule>) => void;
+  applyOptimization: () => void;
+}
+
 export interface FileStore extends 
   DirectorySlice, SettingsSlice, FiltersSlice, 
-  SelectionSlice, TokenizationSlice, ProfilesSlice {}
+  SelectionSlice, TokenizationSlice, ProfilesSlice, OptimizationSlice {}

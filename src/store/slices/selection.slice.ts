@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
 import type { FileStore, SelectionSlice } from '../store.types';
-import { estimateTokenCount } from '@/core/utils/stats.utils';
+import { estimateTokenCount, hasMeaningfulOptimization } from '@/core/utils/stats.utils';
 
 export const createSelectionSlice: StateCreator<FileStore, [], [], SelectionSlice> = (set, get) => ({
   toggleSelection: (id, checked) => {
@@ -44,12 +44,16 @@ export const createSelectionSlice: StateCreator<FileStore, [], [], SelectionSlic
   },
 
   getStats: () => {
-    const { nodes, realTokenMap } = get();
+    const { nodes, realTokenMap, optimizedBytesMap, localFilters } = get();
     
     let totalFiles = 0;
     let selectedFiles = 0;
     let totalSizeBytes = 0;
-    let tokens = 0;
+    let totalOptimizedBytes = 0;
+    
+    let baseTokens = 0;
+    let optimizedTokens = 0;
+    
     let allSelectedHaveRealTokens = true;
 
     for (const node of nodes) {
@@ -61,10 +65,29 @@ export const createSelectionSlice: StateCreator<FileStore, [], [], SelectionSlic
         selectedFiles++;
         totalSizeBytes += node.sizeBytes;
         
-        if (realTokenMap[node.id] !== undefined) {
-          tokens += realTokenMap[node.id];
+        const optBytes = optimizedBytesMap[node.id];
+        let finalBytes = node.sizeBytes;
+
+        if (localFilters?.isOptimizationEnabled && optBytes !== undefined && hasMeaningfulOptimization(node.sizeBytes, optBytes)) {
+          finalBytes = optBytes;
+          totalOptimizedBytes += optBytes;
         } else {
-          tokens += estimateTokenCount(node.sizeBytes);
+          totalOptimizedBytes += node.sizeBytes;
+        }
+        
+        if (realTokenMap[node.id] !== undefined) {
+          baseTokens += realTokenMap[node.id];
+          
+          if (localFilters?.isOptimizationEnabled && finalBytes < node.sizeBytes) {
+            // If we optimized, we estimate the tokens of the new string roughly 
+            // since we skipped Tiktoken for the optimized string for speed.
+            optimizedTokens += estimateTokenCount(finalBytes);
+          } else {
+            optimizedTokens += realTokenMap[node.id];
+          }
+        } else {
+          baseTokens += estimateTokenCount(node.sizeBytes);
+          optimizedTokens += estimateTokenCount(finalBytes);
           allSelectedHaveRealTokens = false;
         }
       }
@@ -77,8 +100,10 @@ export const createSelectionSlice: StateCreator<FileStore, [], [], SelectionSlic
       totalFiles,
       selectedFiles,
       totalSizeBytes,
+      totalOptimizedBytes,
       totalWords: Math.floor(estimatedTotal * 0.75),
-      tokens,
+      baseTokens,
+      tokens: optimizedTokens,
       isExactTokens: allSelectedHaveRealTokens,
     };
   }

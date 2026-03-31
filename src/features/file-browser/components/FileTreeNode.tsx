@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconChevronRight, IconChevronDown, IconFolder, IconFolderOpen, 
-  IconFileText, IconInfoCircle, IconEye, IconEyeOff, IconMapPin, IconMapPinOff 
+  IconFileText, IconInfoCircle, IconEye, IconEyeOff, IconMapPin, IconMapPinOff, IconWand, IconArrowRight
 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
 import { useFileStore } from '@/store/useFileStore';
-import { formatFileSize, estimateTokenCount } from '@/core/utils/stats.utils';
+import { formatFileSize, estimateTokenCount, hasMeaningfulOptimization } from '@/core/utils/stats.utils';
 import { useToast } from '@/shared/context/useToast';
 import './FileTreeNode.css';
 
@@ -21,7 +21,7 @@ interface FileTreeNodeProps {
 
 export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect, onContextMenu }: FileTreeNodeProps) {
   const { t } = useTranslation();
-  const { localFilters, previewNode, setPreviewNode, toggleLocalPathIgnore, realTokenMap } = useFileStore();
+  const { localFilters, previewNode, setPreviewNode, toggleLocalPathIgnore, realTokenMap, optimizedBytesMap } = useFileStore();
   const { showToast } = useToast();
   const paddingLeft = node.depth * 16 + 8;
   const checkboxRef = useRef<HTMLInputElement>(null);
@@ -38,7 +38,7 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
     : !node.isSelected;
 
   const localPatternCheck = node.relativePath;
-  const isLocallyIgnored = localFilters.customPatterns.some(p => p.pattern === localPatternCheck && p.isActive);
+  const isLocallyIgnored = localFilters?.customPatterns?.some(p => p.pattern === localPatternCheck && p.isActive);
   const isPreviewing = previewNode?.id === node.id;
 
   useEffect(() => {
@@ -95,7 +95,19 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
     }
   }
 
-  let metaContent: React.ReactNode = formatFileSize(node.sizeBytes);
+  const baseSize = node.isDirectory ? (folderStat?.sizeBytes || 0) : node.sizeBytes;
+  const optSize = node.isDirectory ? folderStat?.selectedOptimizedBytes : optimizedBytesMap?.[node.id];
+  
+  const isOptimizationActive = localFilters?.isOptimizationEnabled ?? false;
+  
+  const isOptimized = isOptimizationActive && optSize !== undefined && hasMeaningfulOptimization(baseSize, optSize) && !node.isDirectory;
+  const isDirOptimized = isOptimizationActive && node.isDirectory && folderStat && folderStat.optimizedFilesCount > 0;
+  
+  const showOptUI = isOptimized || isDirOptimized;
+
+  const percentSaved = showOptUI ? Math.round(((baseSize - optSize!) / baseSize) * 100) : 0;
+
+  let metaContent: React.ReactNode = null;
   if (node.isDirectory && folderStat) {
     if (folderStat.absoluteTotal === 0) {
       metaContent = t('browser.emptyFolder');
@@ -113,26 +125,56 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
         </>
       );
     }
+
+    if (isDirOptimized) {
+      metaContent = (
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+          {metaContent}
+          <span 
+            className="opt-success" 
+            style={{ marginLeft: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '2px', cursor: 'help' }}
+            data-tooltip={t('optimization.filesOptimizedTooltip')}
+            data-tooltip-pos="top"
+          >
+            <IconWand size={12} />
+            {folderStat.optimizedFilesCount}
+          </span>
+        </span>
+      );
+    }
+  } else {
+    metaContent = showOptUI ? (
+      <>
+        <span className="opt-strikethrough">{formatFileSize(baseSize)}</span>
+        <IconArrowRight size={10} className="opt-arrow" />
+        <span className="opt-success">{formatFileSize(optSize!)}</span>
+        <span className="opt-percent">(-{percentSaved}%)</span>
+      </>
+    ) : formatFileSize(baseSize);
   }
 
-  const totalBytes = node.isDirectory ? (folderStat?.sizeBytes || 0) : node.sizeBytes;
   const selectedBytes = node.isDirectory 
     ? (folderStat?.selectedSizeBytes || 0) 
     : (node.isSelected && !node.isIgnored ? node.sizeBytes : 0);
 
-  const isExactTotal = node.isDirectory ? folderStat?.exactTokens !== undefined : realTokenMap[node.id] !== undefined;
-  const totalTokens = isExactTotal 
-    ? (node.isDirectory ? folderStat!.exactTokens! : realTokenMap[node.id])
-    : estimateTokenCount(totalBytes);
+  const activeBytes = showOptUI ? (optSize ?? selectedBytes) : selectedBytes;
 
-  let selectedTokens = 0;
+  const isExactTotal = node.isDirectory ? folderStat?.exactTokens !== undefined : (realTokenMap && realTokenMap[node.id] !== undefined);
+  
+  const totalBaseTokens = isExactTotal 
+    ? (node.isDirectory ? folderStat!.exactTokens! : realTokenMap[node.id])
+    : estimateTokenCount(baseSize);
+
+  let selectedActiveTokens = 0;
   if (node.isDirectory) {
-    selectedTokens = folderStat?.exactTokens !== undefined ? folderStat.exactTokens : estimateTokenCount(selectedBytes);
+    selectedActiveTokens = folderStat?.exactTokens !== undefined && !showOptUI ? folderStat.exactTokens : estimateTokenCount(activeBytes);
   } else {
-    selectedTokens = (node.isSelected && !node.isIgnored) ? totalTokens : 0;
+    selectedActiveTokens = (node.isSelected && !node.isIgnored) ? (isExactTotal && !showOptUI ? realTokenMap[node.id] : estimateTokenCount(activeBytes)) : 0;
   }
 
-  const isFullySelected = totalBytes === selectedBytes;
+  const unoptimizedSelectedTokens = estimateTokenCount(selectedBytes);
+
+  const isFullySelected = baseSize === selectedBytes;
   const nodeClass = `tree-node ${isIgnoredVisually ? 'tree-node--ignored' : ''} ${isUnselected && !isIgnoredVisually ? 'tree-node--unselected' : ''}`;
 
   return (
@@ -215,14 +257,45 @@ export function FileTreeNode({ node, folderStat, onToggleExpand, onToggleSelect,
         data-tooltip-pos="top"
       >
         {isFullySelected ? (
-          <span className="tree-node-tokens-selected">{!isExactTotal && '~'}{totalTokens.toLocaleString()}</span>
+          <>
+            {showOptUI ? (
+              <>
+                <span className="opt-strikethrough" style={{ fontSize: '0.75rem', marginRight: '2px' }}>
+                  {!isExactTotal && '~'}{totalBaseTokens.toLocaleString()}
+                </span>
+                <span className="tree-node-tokens-selected opt-success">
+                  {!isExactTotal && '~'}{selectedActiveTokens.toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <span className="tree-node-tokens-selected">{!isExactTotal && '~'}{totalBaseTokens.toLocaleString()}</span>
+            )}
+          </>
         ) : (
           <>
-            <span className="tree-node-tokens-selected">{!isExactTotal && '~'}{selectedTokens.toLocaleString()}</span>
-            <span className="tree-node-tokens-total">/ {!isExactTotal && '~'}{totalTokens.toLocaleString()}</span>
+            {showOptUI ? (
+              <>
+                 <span className="opt-strikethrough" style={{ fontSize: '0.75rem', marginRight: '2px' }}>
+                  {!isExactTotal && '~'}{unoptimizedSelectedTokens.toLocaleString()}
+                </span>
+                <span className="tree-node-tokens-selected opt-success">
+                  {!isExactTotal && '~'}{selectedActiveTokens.toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <span className="tree-node-tokens-selected">{!isExactTotal && '~'}{selectedActiveTokens.toLocaleString()}</span>
+            )}
+            <span className="tree-node-tokens-total">/ {!isExactTotal && '~'}{totalBaseTokens.toLocaleString()}</span>
           </>
         )}
       </div>
+
+      {showOptUI && (
+        <div className="opt-wand-icon" data-tooltip={t('optimization.optimized')} data-tooltip-pos="top">
+          <IconWand size={14} />
+        </div>
+      )}
+
     </div>
   );
 }

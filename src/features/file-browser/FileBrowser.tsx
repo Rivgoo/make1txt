@@ -19,6 +19,7 @@ import { FilePreview } from './components/FilePreview';
 import { useFileStore } from '@/store/useFileStore';
 import { useToast } from '@/shared/context/useToast';
 import type { FileNode } from '@/core/types/file.types';
+import { hasMeaningfulOptimization } from '@/core/utils/stats.utils';
 import '../layout/Layout.css';
 import './FileBrowser.css';
 
@@ -51,7 +52,7 @@ export function FileBrowser() {
   const { 
     nodes, isLoading, scannedFilesCount, loadDirectory, cancelDirectoryLoad, toggleExpand, toggleSelection, 
     activeTab, setActiveTab, generatedText, selectAll, deselectAll, previewNode, setPreviewNode, localFilters,
-    realTokenMap 
+    realTokenMap, optimizedBytesMap
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -149,7 +150,9 @@ export function FileBrowser() {
           absoluteTotal: 0, 
           sizeBytes: 0, 
           selectedSizeBytes: 0,
-          exactTokens: 0
+          selectedOptimizedBytes: 0,
+          exactTokens: 0,
+          optimizedFilesCount: 0
         };
       }
     }
@@ -171,8 +174,15 @@ export function FileBrowser() {
                 stats[currentPath].selected += 1;
                 stats[currentPath].selectedSizeBytes += node.sizeBytes;
                 
+                const optBytes = (optimizedBytesMap && optimizedBytesMap[node.id]) ?? node.sizeBytes;
+                stats[currentPath].selectedOptimizedBytes += optBytes;
+                
+                if (localFilters?.isOptimizationEnabled && hasMeaningfulOptimization(node.sizeBytes, optBytes)) {
+                  stats[currentPath].optimizedFilesCount += 1;
+                }
+                
                 if (stats[currentPath].exactTokens !== undefined) {
-                  if (realTokenMap[node.id] !== undefined) {
+                  if (realTokenMap && realTokenMap[node.id] !== undefined) {
                     stats[currentPath].exactTokens! += realTokenMap[node.id];
                   } else {
                     stats[currentPath].exactTokens = undefined;
@@ -186,12 +196,12 @@ export function FileBrowser() {
     }
 
     return stats;
-  }, [nodes, realTokenMap]);
+  }, [nodes, realTokenMap, optimizedBytesMap, localFilters?.isOptimizationEnabled]);
 
   const sortedAndFilteredNodes = useMemo(() => {
     const baseFiltered = nodes.filter(n => {
-      if (n.isGloballyIgnored && !localFilters.showGloballyIgnored) return false;
-      if (n.isLocallyIgnored && !localFilters.showLocallyIgnored) return false;
+      if (n.isGloballyIgnored && !localFilters?.showGloballyIgnored) return false;
+      if (n.isLocallyIgnored && !localFilters?.showLocallyIgnored) return false;
       return true;
     });
 
@@ -218,7 +228,7 @@ export function FileBrowser() {
       finalNodes = baseFiltered.filter(node => matchedNodes.has(node.id));
     }
 
-    if (!localFilters.showEmptyFolders) {
+    if (!localFilters?.showEmptyFolders) {
       const dirHasFiles = new Set<string>();
       for (const node of finalNodes) {
         if (!node.isDirectory) {
@@ -303,7 +313,7 @@ export function FileBrowser() {
     traverse(null);
     return result;
 
-  }, [nodes, searchTerm, localFilters.showGloballyIgnored, localFilters.showLocallyIgnored, localFilters.showEmptyFolders, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
+  }, [nodes, searchTerm, localFilters?.showGloballyIgnored, localFilters?.showLocallyIgnored, localFilters?.showEmptyFolders, sortBy, sortDir, sortFolders, sortRegex, folderStats]);
 
   const sortByOptions: SelectOption[] = [
     { value: 'none', label: t('browser.sortNone'), icon: <IconBan size={16} /> },

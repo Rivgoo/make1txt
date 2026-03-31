@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { 
   IconFolder, IconFileText, IconCircleCheck, IconCircleDashed, 
   IconWeight, IconClock, IconRoute, IconFiles, IconLoader2, IconX, 
-  IconEye, IconEyeOff, IconWorld, IconMapPin, IconMapPinOff, IconCopy, IconCpu
+  IconEye, IconEyeOff, IconWorld, IconMapPin, IconMapPinOff, IconCopy, IconCpu, IconWand
 } from '@tabler/icons-react';
 import type { FileNode } from '@/core/types/file.types';
 import type { FolderStat } from '@/store/useFileStore';
@@ -29,7 +29,7 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   const { t } = useTranslation();
   const { 
     toggleSelection, nodes, previewNode, setPreviewNode, globalSettings, updateGlobalSettings, 
-    localFilters, toggleExtension, toggleLocalPathIgnore, realTokenMap
+    localFilters, toggleExtension, toggleLocalPathIgnore, realTokenMap, optimizedBytesMap
   } = useFileStore();
   
   const { showToast } = useToast();
@@ -39,12 +39,12 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
   const menuRef = useRef<HTMLDivElement>(null);
 
   const ext = !node.isDirectory ? getFileExtension(node.name) : '';
-  const isGlobalExtIgnored = !node.isDirectory && globalSettings.ignoredExtensions.includes(ext);
-  const isLocalExtIgnored = !node.isDirectory && localFilters.extensions[ext]?.isActive === false;
-  const isGlobalFolderIgnored = node.isDirectory && globalSettings.ignoredPaths.includes(node.name);
+  const isGlobalExtIgnored = !node.isDirectory && globalSettings?.ignoredExtensions?.includes(ext);
+  const isLocalExtIgnored = !node.isDirectory && localFilters?.extensions?.[ext]?.isActive === false;
+  const isGlobalFolderIgnored = node.isDirectory && globalSettings?.ignoredPaths?.includes(node.name);
 
   const localPatternCheck = node.relativePath;
-  const isLocallyIgnored = localFilters.customPatterns.some(p => p.pattern === localPatternCheck && p.isActive);
+  const isLocallyIgnored = localFilters?.customPatterns?.some(p => p.pattern === localPatternCheck && p.isActive);
   const isPreviewing = previewNode?.id === node.id;
 
   useLayoutEffect(() => {
@@ -154,10 +154,14 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
     onClose();
   };
 
-  const isExactTotal = node.isDirectory ? folderStat?.exactTokens !== undefined : realTokenMap[node.id] !== undefined;
+  const isExactTotal = node.isDirectory ? folderStat?.exactTokens !== undefined : (realTokenMap && realTokenMap[node.id] !== undefined);
   const tokensVal = isExactTotal 
     ? (node.isDirectory ? folderStat!.exactTokens! : realTokenMap[node.id])
     : estimateTokenCount(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes);
+
+  const baseSize = node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes;
+  const optSize = node.isDirectory ? folderStat?.selectedOptimizedBytes : (optimizedBytesMap && optimizedBytesMap[node.id]);
+  const isOptimized = localFilters?.isOptimizationEnabled && optSize !== undefined && optSize < baseSize;
 
   return (
     <div className="context-menu-overlay" onContextMenu={(e) => { e.preventDefault(); onClose(); }} onClick={onClose}>
@@ -257,10 +261,22 @@ export function FileContextMenu({ x, y, node, folderStat, onClose }: FileContext
               <div className="meta-details">
                 <span className="meta-label">{t('browser.size')}</span>
                 <span className="meta-value">
-                  {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : formatFileSize(node.isDirectory ? (meta?.folderSize || 0) : node.sizeBytes)}
+                  {node.isDirectory && isLoadingMeta ? <IconLoader2 size={12} className="spin" /> : formatFileSize(baseSize)}
                 </span>
               </div>
             </div>
+
+            {isOptimized && (
+              <div className="meta-row">
+                <IconWand size={16} className="meta-icon" style={{ color: 'var(--success)' }} />
+                <div className="meta-details">
+                  <span className="meta-label" style={{ color: 'var(--success)' }}>{t('optimization.optimized', 'Optimized Size')}</span>
+                  <span className="meta-value" style={{ color: 'var(--success)', fontWeight: 600 }}>
+                    {formatFileSize(optSize!)} (-{formatFileSize(baseSize - optSize!)})
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="meta-row">
               <IconCpu size={16} className="meta-icon" />

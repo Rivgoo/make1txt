@@ -4,6 +4,7 @@ import { useFileStore } from '@/store/useFileStore';
 import { useToast } from '@/shared/context/useToast';
 import type { WorkerInput, WorkerOutput } from '@/core/types/worker.types';
 import { generateTextTree } from '@/core/utils/tree.utils';
+import { optimizeText } from '@/core/utils/optimization.utils';
 
 export function useGenerator() {
   const { t } = useTranslation();
@@ -35,7 +36,7 @@ export function useGenerator() {
 
   const assembleFinalText = useCallback(
     (fileContentText: string): string => {
-      if (!localFilters.generateTree) return fileContentText;
+      if (!localFilters?.generateTree) return fileContentText;
 
       const rawTree = generateTextTree(nodes, {
         includeIgnored: localFilters.treeIncludeIgnored,
@@ -111,6 +112,8 @@ export function useGenerator() {
         files: selectedFiles,
         template: globalSettings.outputTemplate,
         maxFileSizeBytes,
+        isOptimizationEnabled: localFilters?.isOptimizationEnabled ?? false,
+        optimizationRules: localFilters?.optimizationRules ?? []
       };
       workerRef.current.postMessage(payload);
     } else {
@@ -138,7 +141,12 @@ export function useGenerator() {
                   return `[Skipped — file exceeds size limit: ${item.path}]\n`;
                 }
 
-                const text = await file.text();
+                let text = await file.text();
+
+                if (localFilters?.isOptimizationEnabled && localFilters.optimizationRules?.length > 0) {
+                  text = optimizeText(text, localFilters.optimizationRules).optimizedText;
+                }
+
                 return globalSettings.outputTemplate
                   .replace(/\{\{path\}\}/g, item.path)
                   .replace(/\{\{content\}\}/g, text);
@@ -175,6 +183,7 @@ export function useGenerator() {
   }, [
     nodes,
     globalSettings,
+    localFilters,
     isRestoredFromProfile,
     showToast,
     setGeneratedText,

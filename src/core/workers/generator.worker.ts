@@ -1,9 +1,10 @@
 import type { WorkerInput, WorkerOutput } from '../types/worker.types';
+import { optimizeText } from '../utils/optimization.utils';
 
 const PROGRESS_BATCH = 10;
 
 self.onmessage = async (e: MessageEvent<WorkerInput>) => {
-  const { files, template, maxFileSizeBytes } = e.data;
+  const { files, template, maxFileSizeBytes, isOptimizationEnabled, optimizationRules } = e.data;
 
   if (files.length === 0) {
     self.postMessage({ type: 'done', blob: new Blob([], { type: 'text/plain;charset=utf-8' }) } as WorkerOutput);
@@ -21,7 +22,12 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
         const skipMsg = `[Skipped — file exceeds size limit: ${item.path}]\n`;
         chunks.push(new Blob([skipMsg], { type: 'text/plain;charset=utf-8' }));
       } else {
-        const text = await file.text();
+        let text = await file.text();
+
+        if (isOptimizationEnabled && optimizationRules && optimizationRules.length > 0) {
+          text = optimizeText(text, optimizationRules).optimizedText;
+        }
+
         const block = template
           .replace(/\{\{path\}\}/g, item.path)
           .replace(/\{\{content\}\}/g, text);
