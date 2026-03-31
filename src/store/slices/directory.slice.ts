@@ -130,6 +130,7 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           generateTree: savedFilters.generateTree ?? true,
           treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false,
           isOptimizationEnabled: savedFilters.isOptimizationEnabled ?? false,
+          isOptimizationDirty: savedFilters.isOptimizationDirty ?? false,
           optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
         };
       }
@@ -148,6 +149,7 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           generateTree: localFiltersToApply.generateTree ?? true,
           treeIncludeIgnored: localFiltersToApply.treeIncludeIgnored ?? false,
           isOptimizationEnabled: localFiltersToApply.isOptimizationEnabled ?? false,
+          isOptimizationDirty: localFiltersToApply.isOptimizationDirty ?? false,
           optimizationRules: localFiltersToApply.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
         },
         nodes: rawNodes,
