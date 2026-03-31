@@ -60,8 +60,16 @@ export function ControlPanel() {
       await loadDirectory();
       showToast('success', t('common.success'), t('browser.folderLoaded'));
     } catch (error) {
-      if (error instanceof Error && error.message !== 'CANCELLED') {
-        showToast('error', t('common.error'), error.message);
+      if (error instanceof Error) {
+        if (error.message === 'CANCELLED') {
+          showToast('warning', t('common.warning'), t('browser.scanCancelled'));
+        } else if (error.message === 'ALREADY_LOADING') {
+          showToast('warning', t('common.wait'), t('browser.alreadyLoading'));
+        } else if (error.message === 'NO_PERMISSION') {
+          showToast('error', t('common.error'), t('browser.noPermission'));
+        } else {
+          showToast('error', t('common.error'), error.message);
+        }
       }
     }
   };
