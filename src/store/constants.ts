@@ -22,4 +22,6 @@ export const DEFAULT_GLOBAL_SETTINGS: GlobalSettings = {
   treePlacement: 'top',
   treeWrapper: 'Directory Structure:\n\n{{tree}}\n\n',
   treeSymbols: DEFAULT_TREE_SYMBOLS,
+  saveStrategy: 'default',
+  fileNameTemplate: '{{folder}}_code_{{date}}_{{time}}',
 };

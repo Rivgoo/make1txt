@@ -40,6 +40,8 @@ export interface TreeSymbols {
   ignoredSuffix: string;
 }
 
+export type SaveStrategy = 'default' | 'ask';
+
 export interface GlobalSettings {
   language: 'auto' | 'en' | 'uk';
   maxFileSizeKb: number;
@@ -51,6 +53,8 @@ export interface GlobalSettings {
   treePlacement: 'top' | 'bottom';
   treeWrapper: string;
   treeSymbols: TreeSymbols;
+  saveStrategy: SaveStrategy;
+  fileNameTemplate: string;
 }
 
 export interface CustomPattern {

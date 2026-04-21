@@ -107,7 +107,8 @@ export const uk = {
     sections: {
       limits: 'Виключення та ліміти',
       structure: 'Відображення структури файлів',
-      formatting: 'Форматування виводу'
+      formatting: 'Форматування виводу',
+      export: 'Налаштування експорту та завантаження'
     },
     labels: {
       globalExts: 'Глобально ігноровані розширення',
@@ -127,7 +128,20 @@ export const uk = {
       structureWrapper: 'Шаблон обгортки (використовуйте {{tree}})',
       previewStructure: 'Прев\'ю структури:',
       outputTemplate: 'Шаблон склеювання файлів. Змінні: {{path}}, {{content}}',
-      previewOutput: 'Прев\'ю виводу:'
+      previewOutput: 'Прев\'ю виводу:',
+      saveStrategy: 'Стратегія вибору місця збереження',
+      strategyDefault: 'Стандартна папка браузера',
+      strategyAsk: 'Запитувати щоразу (Нативне вікно)',
+      fileNameTemplate: 'Шаблон назви файлу',
+      previewFileName: 'Прев\'ю назви:'
+    },
+    varsDesc: {
+      folder: 'Назва кореневої папки (напр. my-project)',
+      files: 'Кількість оброблених файлів (напр. 42)',
+      size: 'Розмір збірки (напр. 1.5MB)',
+      date: 'Поточна дата (напр. 2024-03-15)',
+      time: 'Поточний час (напр. 14-30-00)',
+      timestamp: 'Власний формат (напр. {{timestamp:DD.MM.YY}} -> 15.03.24)'
     }
   },
   profiles: {
@@ -176,13 +190,23 @@ export const uk = {
     error: 'Сталася помилка під час генерації.',
     fileError: '[Помилка читання файлу: {{path}}]',
     copySuccess: 'Увесь текст успішно додано в буфер обміну.',
-    copyError: 'Не вдалося скопіювати текст.'
+    copyError: 'Не вдалося скопіювати текст.',
+    downloadSuccess: 'Файл успішно завантажено.',
+    downloadError: 'Не вдалося зберегти файл.',
+    downloadCancelled: 'Завантаження скасовано користувачем.'
   },
   result: {
     largeWarningTitle: 'Файл занадто великий для повного перегляду',
     largeWarningDesc: 'Загальний розмір файлу — {{size}}. Показано частковий перегляд, щоб уникнути зависання браузера.',
     showAll: 'Показати все (може викликати зависання)',
-    truncatedMark: '\n\n... [ПЕРЕГЛЯД ОБРІЗАНО] ...\n'
+    truncatedMark: '\n\n... [ПЕРЕГЛЯД ОБРІЗАНО] ...\n',
+    exportPanelTitle: 'Налаштування експорту',
+    finalFileName: 'Фінальна назва файлу',
+    finalFileNameDesc: 'Ви можете вручну перейменувати файл для цієї сесії.',
+    exportStats: 'Статистика збірки',
+    saveStrategy: 'Місце збереження',
+    askStrategy: 'Нативне вікно ОС',
+    defaultStrategy: 'Завантаження браузера'
   },
   optimization: {
     title: 'Очищення та оптимізація',

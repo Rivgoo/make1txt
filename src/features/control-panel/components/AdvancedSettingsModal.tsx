@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconRestore, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree, 
-  IconLanguage, IconLayoutNavbar, IconLayoutBottombar, IconFilter, IconBrandGit 
+  IconLanguage, IconLayoutNavbar, IconLayoutBottombar, IconFilter, IconBrandGit, IconDownload
 } from '@tabler/icons-react';
 import { Modal } from '@/shared/ui/Modal/Modal';
 import { Button } from '@/shared/ui/Button/Button';
 import { Select } from '@/shared/ui/Select/Select';
 import { useFileStore, DEFAULT_GLOBAL_SETTINGS, DEFAULT_TREE_SYMBOLS } from '@/store/useFileStore';
 import { generateTextTree } from '@/core/utils/tree.utils';
+import { evaluateFileName } from '@/core/utils/export.utils';
 import type { FileNode, FileSystemHandle } from '@/core/types/file.types';
 import './AdvancedSettingsModal.css';
 
@@ -107,17 +108,23 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
     setLocal({ ...local, ignoredPaths: local.ignoredPaths.filter(p => p !== pathToRemove) });
   };
 
-  const previewText = local.outputTemplate
+  const previewText = (local.outputTemplate || DEFAULT_GLOBAL_SETTINGS.outputTemplate)
     .replace(/{{path}}/g, 'src/main.ts')
     .replace(/{{content}}/g, 'console.log("Hello World");');
 
   const treePreviewRaw = generateTextTree(MOCK_TREE_NODES as FileNode[], {
     includeIgnored: true,
-    symbols: local.treeSymbols,
+    symbols: local.treeSymbols || DEFAULT_TREE_SYMBOLS,
     showEmptyFolders: true
   });
   
-  const treePreviewText = local.treeWrapper.replace('{{tree}}', treePreviewRaw);
+  const treePreviewText = (local.treeWrapper || DEFAULT_GLOBAL_SETTINGS.treeWrapper).replace('{{tree}}', treePreviewRaw);
+
+  const previewFileNameText = evaluateFileName(local.fileNameTemplate || DEFAULT_GLOBAL_SETTINGS.fileNameTemplate, { 
+    folder: 'my-project', 
+    filesCount: 42, 
+    sizeBytes: 1048576 
+  });
 
   const placementOptions = [
     { value: 'top', label: t('settings.labels.placementTop'), icon: <IconLayoutNavbar size={16}/> },
@@ -130,6 +137,11 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
     { value: 'uk', label: t('settings.langUk'), icon: <IconLanguage size={16}/> }
   ];
 
+  const strategyOptions = [
+    { value: 'default', label: t('settings.labels.strategyDefault') },
+    { value: 'ask', label: t('settings.labels.strategyAsk') }
+  ];
+
   return (
     <Modal isOpen={isOpen} title={t('settings.title')} maxWidth="850px" onClose={onClose}>
       <div className="advanced-settings-body">
@@ -139,7 +151,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
           <div className="as-group" style={{ maxWidth: '300px' }}>
             <Select 
               options={languageOptions}
-              value={local.language}
+              value={local.language || 'auto'}
               onChange={(val) => setLocal({ ...local, language: val as 'auto' | 'en' | 'uk' })}
             />
           </div>
@@ -161,7 +173,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
                 <Button variant="secondary" onClick={addExt}><IconPlus size={16}/></Button>
               </div>
               <div className="as-tag-container">
-                {local.ignoredExtensions.map(ext => (
+                {(local.ignoredExtensions || []).map(ext => (
                   <span key={ext} className="as-tag-chip">
                     {ext}
                     <button className="as-tag-remove" onClick={() => removeExt(ext)}><IconX size={12}/></button>
@@ -183,7 +195,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
                 <Button variant="secondary" onClick={addPath}><IconPlus size={16}/></Button>
               </div>
               <div className="as-tag-container">
-                {local.ignoredPaths.map(p => (
+                {(local.ignoredPaths || []).map(p => (
                   <span key={p} className="as-tag-chip">
                     {p}
                     <button className="as-tag-remove" onClick={() => removePath(p)}><IconX size={12}/></button>
@@ -198,7 +210,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
             <input 
               type="number" 
               className="as-input"
-              value={local.maxFileSizeKb}
+              value={local.maxFileSizeKb ?? 10240}
               onChange={(e) => setLocal({ ...local, maxFileSizeKb: Number(e.target.value) })}
             />
           </div>
@@ -209,7 +221,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
               <span className="as-checkbox-label">{t('settings.labels.pruneIgnored')}</span>
               <input 
                 type="checkbox" 
-                checked={local.pruneIgnoredOnRead} 
+                checked={local.pruneIgnoredOnRead ?? true} 
                 onChange={(e) => setLocal({ ...local, pruneIgnoredOnRead: e.target.checked })} 
                 className="as-checkbox-input"
               />
@@ -220,7 +232,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
               <span className="as-checkbox-label">{t('settings.labels.useGitignore')}</span>
               <input 
                 type="checkbox" 
-                checked={local.useGitignore} 
+                checked={local.useGitignore ?? true} 
                 onChange={(e) => setLocal({ ...local, useGitignore: e.target.checked })} 
                 className="as-checkbox-input"
               />
@@ -235,7 +247,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
               <label>{t('settings.labels.structurePlacement')}</label>
               <Select 
                 options={placementOptions}
-                value={local.treePlacement}
+                value={local.treePlacement || 'top'}
                 onChange={(val) => setLocal({ ...local, treePlacement: val as 'top' | 'bottom' })}
               />
 
@@ -258,24 +270,24 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
                 <div className="as-tree-symbols-grid">
                   <div className="as-tree-symbol-item">
                     <label>{t('settings.labels.branch')}</label>
-                    <input className="as-input" value={local.treeSymbols.branch} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, branch: e.target.value}})} />
+                    <input className="as-input" value={local.treeSymbols?.branch || ''} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, branch: e.target.value}})} />
                   </div>
                   <div className="as-tree-symbol-item">
                     <label>{t('settings.labels.last')}</label>
-                    <input className="as-input" value={local.treeSymbols.last} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, last: e.target.value}})} />
+                    <input className="as-input" value={local.treeSymbols?.last || ''} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, last: e.target.value}})} />
                   </div>
                   <div className="as-tree-symbol-item">
                     <label>{t('settings.labels.vertical')}</label>
-                    <input className="as-input" value={local.treeSymbols.vertical} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, vertical: e.target.value}})} />
+                    <input className="as-input" value={local.treeSymbols?.vertical || ''} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, vertical: e.target.value}})} />
                   </div>
                   <div className="as-tree-symbol-item">
                     <label>{t('settings.labels.space')}</label>
-                    <input className="as-input" value={local.treeSymbols.space} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, space: e.target.value}})} />
+                    <input className="as-input" value={local.treeSymbols?.space || ''} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, space: e.target.value}})} />
                   </div>
                 </div>
                 <div className="as-tree-symbol-item" style={{ marginTop: 'var(--spacing-xs)' }}>
                   <label>{t('settings.labels.ignoredMark')}</label>
-                  <input className="as-input" value={local.treeSymbols.ignoredSuffix} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, ignoredSuffix: e.target.value}})} />
+                  <input className="as-input" value={local.treeSymbols?.ignoredSuffix || ''} onChange={e => setLocal({...local, treeSymbols: {...local.treeSymbols, ignoredSuffix: e.target.value}})} />
                 </div>
               </div>
             </div>
@@ -285,7 +297,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
               <textarea 
                 className="as-textarea"
                 style={{ minHeight: '60px' }}
-                value={local.treeWrapper}
+                value={local.treeWrapper || DEFAULT_GLOBAL_SETTINGS.treeWrapper}
                 onChange={(e) => setLocal({ ...local, treeWrapper: e.target.value })}
               />
               <div className="as-preview-box" style={{ marginTop: 'var(--spacing-xs)' }}>
@@ -317,13 +329,49 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
             
             <textarea 
               className="as-textarea"
-              value={local.outputTemplate}
+              value={local.outputTemplate || DEFAULT_GLOBAL_SETTINGS.outputTemplate}
               onChange={(e) => setLocal({ ...local, outputTemplate: e.target.value })}
             />
 
             <div className="as-preview-box">
               <span className="as-preview-label">{t('settings.labels.previewOutput')}</span>
               <pre>{previewText}</pre>
+            </div>
+          </div>
+        </div>
+
+        <div className="as-section">
+          <h4><IconDownload size={18}/> {t('settings.sections.export')}</h4>
+          
+          <div className="as-group" style={{ marginBottom: 'var(--spacing-md)', maxWidth: '300px' }}>
+            <label>{t('settings.labels.saveStrategy')}</label>
+            <Select 
+              options={strategyOptions}
+              value={local.saveStrategy || 'default'}
+              onChange={(val) => setLocal({ ...local, saveStrategy: val as 'default' | 'ask' })}
+            />
+          </div>
+
+          <div className="as-group">
+            <label>{t('settings.labels.fileNameTemplate')}</label>
+            <input 
+              className="as-input"
+              value={local.fileNameTemplate || DEFAULT_GLOBAL_SETTINGS.fileNameTemplate}
+              onChange={(e) => setLocal({ ...local, fileNameTemplate: e.target.value })}
+            />
+            
+            <div className="as-variables-grid">
+              <div className="as-var-item"><span className="as-var-code">{'{{folder}}'}</span>{t('settings.varsDesc.folder')}</div>
+              <div className="as-var-item"><span className="as-var-code">{'{{files}}'}</span>{t('settings.varsDesc.files')}</div>
+              <div className="as-var-item"><span className="as-var-code">{'{{size}}'}</span>{t('settings.varsDesc.size')}</div>
+              <div className="as-var-item"><span className="as-var-code">{'{{date}}'}</span>{t('settings.varsDesc.date')}</div>
+              <div className="as-var-item"><span className="as-var-code">{'{{time}}'}</span>{t('settings.varsDesc.time')}</div>
+              <div className="as-var-item"><span className="as-var-code">{'{{timestamp:FORMAT}}'}</span>{t('settings.varsDesc.timestamp')}</div>
+            </div>
+
+            <div className="as-preview-box" style={{ marginTop: 'var(--spacing-md)', maxHeight: 'none', overflow: 'hidden' }}>
+              <span className="as-preview-label">{t('settings.labels.previewFileName')}</span>
+              <pre style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{previewFileNameText}</pre>
             </div>
           </div>
         </div>

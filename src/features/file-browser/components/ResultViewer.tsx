@@ -1,10 +1,15 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFileStore } from '@/store/useFileStore';
 import { Button } from '@/shared/ui/Button/Button';
-import { IconCopy, IconDownload, IconAlertTriangle, IconEye } from '@tabler/icons-react';
+import { 
+  IconCopy, IconDownload, IconAlertTriangle, IconEye, 
+  IconChevronUp, IconChevronDown, IconSettings, IconFileText, 
+  IconFolder, IconWeight, IconCpu, IconLetterCase 
+} from '@tabler/icons-react';
 import { useToast } from '@/shared/context/useToast';
-import { formatFileSize } from '@/core/utils/stats.utils';
+import { formatFileSize, estimateTokenCount, countWords } from '@/core/utils/stats.utils';
+import { evaluateFileName, sanitizeFileName, executeDownload } from '@/core/utils/export.utils';
 import './ResultViewer.css';
   
 const MAX_PREVIEW_CHARS = 2_000_000;
@@ -52,10 +57,16 @@ async function copyTextReliably(text: string): Promise<void> {
 
 export function ResultViewer() {
   const { t } = useTranslation();
-  const { generatedText } = useFileStore();
+  const { generatedText, globalSettings, sessionFileName, setSessionFileName, rootHandle, getStats } = useFileStore();
   const { showToast } = useToast();
+  
   const [showFull, setShowFull] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [isExportPanelOpen, setIsExportPanelOpen] = useState(() => {
+    return localStorage.getItem('make1txt_exportPanelOpen') === 'true';
+  });
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isOversized = (generatedText?.length ?? 0) > TRIGGER_TRUNCATE_CHARS;
@@ -67,6 +78,12 @@ export function ResultViewer() {
     }
     return generatedText;
   }, [generatedText, isOversized, showFull, t]);
+
+  const toggleExportPanel = () => {
+    const newState = !isExportPanelOpen;
+    setIsExportPanelOpen(newState);
+    localStorage.setItem('make1txt_exportPanelOpen', String(newState));
+  };
 
   const handleCopy = useCallback(async () => {
     if (!generatedText || isCopying) return;
@@ -83,20 +100,55 @@ export function ResultViewer() {
     }
   }, [generatedText, isCopying, showToast, t]);
 
-  const handleDownload = useCallback(() => {
-    if (!generatedText) return;
-    const blob = new Blob([generatedText], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `codebase_${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, [generatedText]);
+  const baseFileName = useMemo(() => {
+    const stats = getStats();
+    return evaluateFileName(globalSettings.fileNameTemplate, {
+      folder: rootHandle?.name || 'project',
+      filesCount: stats.selectedFiles,
+      sizeBytes: generatedText ? new Blob([generatedText]).size : 0
+    });
+  }, [globalSettings.fileNameTemplate, rootHandle?.name, generatedText, getStats]);
 
-  const sizeEstimate = formatFileSize(generatedText?.length ?? 0);
+  useEffect(() => {
+    if (!sessionFileName && generatedText) {
+      setSessionFileName(baseFileName);
+    }
+  }, [baseFileName, sessionFileName, generatedText, setSessionFileName]);
+
+  const finalFileName = sessionFileName || baseFileName;
+
+  const handleDownload = useCallback(async () => {
+    if (!generatedText || isDownloading) return;
+    setIsDownloading(true);
+    
+    try {
+      await executeDownload(generatedText, finalFileName, globalSettings.saveStrategy);
+      showToast('success', t('common.success'), t('generator.downloadSuccess'));
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === 'CANCELLED') {
+        showToast('info', t('common.info'), t('generator.downloadCancelled'));
+      } else {
+        showToast('error', t('common.error'), t('generator.downloadError'));
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  }, [generatedText, finalFileName, globalSettings.saveStrategy, isDownloading, showToast, t]);
+
+  const handleFileNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSessionFileName(e.target.value);
+  };
+
+  const handleFileNameBlur = () => {
+    if (sessionFileName) {
+      const clean = sanitizeFileName(sessionFileName);
+      setSessionFileName(clean.endsWith('.txt') ? clean : `${clean}.txt`);
+    }
+  };
+
+  const sizeEstimateBytes = generatedText ? new Blob([generatedText]).size : 0;
+  const wordCount = generatedText ? countWords(generatedText) : 0;
+  const tokenCount = estimateTokenCount(sizeEstimateBytes);
 
   return (
     <div className="result-wrapper">
@@ -104,12 +156,73 @@ export function ResultViewer() {
         <Button variant="secondary" onClick={handleCopy} disabled={isCopying}>
           <IconCopy size={18} /> {isCopying ? t('common.wait') : t('common.copy')}
         </Button>
-        <Button variant="primary" onClick={handleDownload}>
-          <IconDownload size={18} /> {t('common.downloadTxt')}
-        </Button>
+        <div style={{ display: 'flex' }}>
+          <Button variant="primary" onClick={handleDownload} disabled={isDownloading} style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}>
+            <IconDownload size={18} /> {isDownloading ? t('common.wait') : t('common.downloadTxt')}
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={toggleExportPanel} 
+            style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: '1px solid rgba(255,255,255,0.2)', padding: '0 8px' }}
+          >
+            {isExportPanelOpen ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
+          </Button>
+        </div>
       </header>
 
       <main className="panel-content result-content">
+        <div className={`export-panel-wrapper ${isExportPanelOpen ? 'is-open' : ''}`}>
+          <div className="export-panel-layout">
+            <div className="export-panel-col">
+              <span className="export-panel-title">
+                <IconSettings size={18} color="var(--accent-primary)" />
+                {t('result.exportPanelTitle')}
+              </span>
+              
+              <div className="export-input-group">
+                <label>{t('result.finalFileName')}</label>
+                <input 
+                  className="export-input"
+                  value={finalFileName}
+                  onChange={handleFileNameChange}
+                  onBlur={handleFileNameBlur}
+                />
+                <p>{t('result.finalFileNameDesc')}</p>
+              </div>
+
+              <div className="export-input-group">
+                <label>{t('result.saveStrategy')}</label>
+                <div className={`export-strategy-badge ${globalSettings.saveStrategy === 'ask' ? 'ask' : ''}`}>
+                  {globalSettings.saveStrategy === 'ask' ? <IconFolder size={14} /> : <IconFileText size={14} />}
+                  {globalSettings.saveStrategy === 'ask' ? t('result.askStrategy') : t('result.defaultStrategy')}
+                </div>
+              </div>
+            </div>
+
+            <div className="export-panel-col">
+              <span className="export-panel-title">
+                <IconFileText size={18} color="var(--accent-primary)" />
+                {t('result.exportStats')}
+              </span>
+              
+              <div className="export-stats-grid">
+                <div className="export-stat-card">
+                  <span className="export-stat-label"><IconWeight size={14} /> {t('stats.size')}</span>
+                  <span className="export-stat-value">{formatFileSize(sizeEstimateBytes)}</span>
+                </div>
+                <div className="export-stat-card">
+                  <span className="export-stat-label"><IconCpu size={14} /> {t('stats.tokens')}</span>
+                  <span className="export-stat-value accent">~{tokenCount.toLocaleString()}</span>
+                </div>
+                <div className="export-stat-card">
+                  <span className="export-stat-label"><IconLetterCase size={14} /> {t('stats.words')}</span>
+                  <span className="export-stat-value">{wordCount.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <textarea
           ref={textareaRef}
           className="result-textarea"
@@ -123,7 +236,7 @@ export function ResultViewer() {
               <IconAlertTriangle size={20} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
               {t('result.largeWarningTitle')}
             </h3>
-            <p>{t('result.largeWarningDesc').replace('{{size}}', sizeEstimate)}</p>
+            <p>{t('result.largeWarningDesc').replace('{{size}}', formatFileSize(sizeEstimateBytes))}</p>
             <div className="result-warning-actions">
               <Button variant="secondary" onClick={() => setShowFull(true)}>
                 <IconEye size={18} /> {t('result.showAll')}
@@ -131,7 +244,7 @@ export function ResultViewer() {
               <Button variant="secondary" onClick={handleCopy} disabled={isCopying}>
                 <IconCopy size={18} /> {isCopying ? t('common.wait') : t('common.copy')}
               </Button>
-              <Button variant="primary" onClick={handleDownload}>
+              <Button variant="primary" onClick={handleDownload} disabled={isDownloading}>
                 <IconDownload size={18} /> {t('common.downloadTxt')}
               </Button>
             </div>

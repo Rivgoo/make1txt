@@ -5,6 +5,7 @@ import { dbService } from '@/core/services/DatabaseService';
 import { recompileAndRecalculate } from '../helpers/node.helper';
 import { saveGlobalSettings } from '../helpers/settings.helper';
 import { PREDEFINED_OPTIMIZATION_RULES } from '@/core/constants/optimization.constants';
+import { DEFAULT_GLOBAL_SETTINGS } from '../constants';
 
 export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice> = (set, get) => ({
   profiles: [],
@@ -62,6 +63,7 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
         });
         
         const savedFilters = profile.localFilters;
+        const mergedSettings = { ...DEFAULT_GLOBAL_SETTINGS, ...profile.settings };
 
         const newLocalFilters = {
           ...state.localFilters,
@@ -76,15 +78,15 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
           optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
         };
 
-        const tempState = { ...state, globalSettings: profile.settings, localFilters: newLocalFilters };
+        const tempState = { ...state, globalSettings: mergedSettings, localFilters: newLocalFilters };
         return {
-          globalSettings: profile.settings,
+          globalSettings: mergedSettings,
           localFilters: newLocalFilters,
           ...recompileAndRecalculate(tempState)
         };
       });
       
-      saveGlobalSettings(profile.settings);
+      saveGlobalSettings({ ...DEFAULT_GLOBAL_SETTINGS, ...profile.settings });
       get().evaluateTokenization();
     }
   },

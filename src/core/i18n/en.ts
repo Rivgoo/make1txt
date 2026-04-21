@@ -107,7 +107,8 @@ export const en = {
     sections: {
       limits: 'Exclusions & Limits',
       structure: 'File Structure Options',
-      formatting: 'Output Formatting'
+      formatting: 'Output Formatting',
+      export: 'Export & Download Settings'
     },
     labels: {
       globalExts: 'Globally ignored extensions',
@@ -127,7 +128,20 @@ export const en = {
       structureWrapper: 'Wrapper template (use {{tree}})',
       previewStructure: 'Structure Preview:',
       outputTemplate: 'File merge template. Variables: {{path}}, {{content}}',
-      previewOutput: 'Output Preview:'
+      previewOutput: 'Output Preview:',
+      saveStrategy: 'Save Location Strategy',
+      strategyDefault: 'Browser Default (Downloads Folder)',
+      strategyAsk: 'Always Ask (Native Picker)',
+      fileNameTemplate: 'File Name Template',
+      previewFileName: 'File Name Preview:'
+    },
+    varsDesc: {
+      folder: 'Root folder name (e.g. my-project)',
+      files: 'Processed files count (e.g. 42)',
+      size: 'Bundle file size (e.g. 1.5MB)',
+      date: 'Current date (e.g. 2024-03-15)',
+      time: 'Current time (e.g. 14-30-00)',
+      timestamp: 'Custom format (e.g. {{timestamp:DD.MM.YY}} -> 15.03.24)'
     }
   },
   profiles: {
@@ -176,13 +190,23 @@ export const en = {
     error: 'An error occurred during generation.',
     fileError: '[Error reading file: {{path}}]',
     copySuccess: 'Entire text successfully copied to clipboard.',
-    copyError: 'Failed to copy text.'
+    copyError: 'Failed to copy text.',
+    downloadSuccess: 'File successfully downloaded.',
+    downloadError: 'Failed to download file.',
+    downloadCancelled: 'Download was cancelled.'
   },
   result: {
     largeWarningTitle: 'File is too large for full preview',
     largeWarningDesc: 'Total file size is {{size}}. Showing a partial preview to prevent browser lag.',
     showAll: 'Show All Content (May freeze browser)',
-    truncatedMark: '\n\n... [PREVIEW TRUNCATED] ...\n'
+    truncatedMark: '\n\n... [PREVIEW TRUNCATED] ...\n',
+    exportPanelTitle: 'Export Configuration',
+    finalFileName: 'Final File Name',
+    finalFileNameDesc: 'You can manually rename this file for the current session.',
+    exportStats: 'Export Bundle Stats',
+    saveStrategy: 'Save Location',
+    askStrategy: 'Native OS Picker',
+    defaultStrategy: 'Browser Default'
   },
   optimization: {
     title: 'Code Cleanup & Optimization',

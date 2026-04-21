@@ -7,6 +7,7 @@ import { getFileExtension } from '@/core/utils/stats.utils';
 import { buildExtMap, recompileAndRecalculate } from '../helpers/node.helper';
 import { saveGlobalSettings } from '../helpers/settings.helper';
 import { PREDEFINED_OPTIMIZATION_RULES } from '@/core/constants/optimization.constants';
+import { DEFAULT_GLOBAL_SETTINGS } from '../constants';
 
 export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlice> = (set, get) => ({
   nodes: [],
@@ -18,12 +19,14 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
   activeTab: 'tree',
   generatedText: null,
   previewNode: null,
+  sessionFileName: null,
   gitignoreRegexes: [],
   compiledCustomRegexes: [],
 
   setActiveTab: (tab) => set({ activeTab: tab }),
   setGeneratedText: (text) => set({ generatedText: text }),
   setPreviewNode: (node) => set({ previewNode: node }),
+  setSessionFileName: (name) => set({ sessionFileName: name }),
 
   cancelDirectoryLoad: () => {
     get().abortController?.abort();
@@ -46,6 +49,7 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
       isLoading: true, 
       scannedFilesCount: 0, 
       previewNode: null, 
+      sessionFileName: null,
       abortController: controller,
       realTokenMap: {},
       optimizedBytesMap: {},
@@ -58,7 +62,7 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
 
       let activeGlobalSettings = get().globalSettings;
       if (applyProfile) {
-        activeGlobalSettings = applyProfile.settings;
+        activeGlobalSettings = { ...DEFAULT_GLOBAL_SETTINGS, ...applyProfile.settings };
         set({ globalSettings: activeGlobalSettings });
         saveGlobalSettings(activeGlobalSettings);
       }

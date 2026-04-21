@@ -24,12 +24,14 @@ export interface DirectorySlice {
   activeTab: 'tree' | 'result';
   generatedText: string | null;
   previewNode: FileNode | null;
+  sessionFileName: string | null;
   gitignoreRegexes: RegExp[];
   compiledCustomRegexes: RegExp[];
 
   setActiveTab: (tab: 'tree' | 'result') => void;
   setGeneratedText: (text: string | null) => void;
   setPreviewNode: (node: FileNode | null) => void;
+  setSessionFileName: (name: string | null) => void;
   loadDirectory: () => Promise<void>;
   loadDirectoryFromHandle: (handle: FileSystemDirectoryHandle, applyProfile?: Profile, isRestored?: boolean) => Promise<void>;
   cancelDirectoryLoad: () => void;

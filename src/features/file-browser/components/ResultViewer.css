@@ -7,6 +7,7 @@
 
 .result-header {
   justify-content: center !important;
+  transition: all 0.2s ease;
 }
 
 .result-content {
@@ -15,6 +16,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  flex-direction: column;
 }
 
 .result-textarea {
@@ -73,6 +75,139 @@
   margin-top: var(--spacing-sm);
 }
 
+.export-panel-wrapper {
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+  max-height: 0;
+  opacity: 0;
+}
+
+.export-panel-wrapper.is-open {
+  max-height: 400px;
+  opacity: 1;
+}
+
+.export-panel-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+}
+
+.export-panel-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.export-panel-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-xs);
+}
+
+.export-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.export-input-group label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.export-input-group p {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.export-input {
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.export-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.export-strategy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  width: fit-content;
+}
+
+.export-strategy-badge.ask {
+  color: var(--accent-primary);
+  border-color: rgba(255, 122, 0, 0.3);
+  background-color: rgba(255, 122, 0, 0.05);
+}
+
+.export-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.export-stat-card {
+  background-color: var(--bg-root);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.export-stat-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.export-stat-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.export-stat-value.accent {
+  color: var(--accent-primary);
+}
+
 @keyframes slideUpFade {
   from {
     opacity: 0;
@@ -81,5 +216,12 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .export-panel-layout {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
 }
