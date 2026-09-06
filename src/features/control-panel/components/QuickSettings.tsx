@@ -1,10 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconFileCode, IconFilter, 
   IconPlus, IconTrash, IconArrowUp, IconArrowDown, IconEyeOff, IconPencil,
   IconChecks, IconSquareX, IconEye, IconBinaryTree, IconWorld, IconMapPin, IconFolderOff, IconAlertCircle, IconLoader2,
-  IconWand, IconChevronDown, IconChevronRight, IconRegex
+  IconWand, IconChevronDown, IconChevronRight, IconRegex, IconCode
 } from '@tabler/icons-react';
 import { Button } from '@/shared/ui/Button/Button';
 import { useFileStore } from '@/store/useFileStore';
@@ -341,6 +341,16 @@ export function QuickSettings() {
           onClick={() => localFilters?.generateTree && updateLocalFilters({ treeIncludeIgnored: !localFilters?.treeIncludeIgnored })}
         >
           <span className="qs-title"><IconEye size={16}/> {t('quickSettings.structureIncludeIgnored')}</span>
+          <div className="toggle-switch" />
+        </div>
+      </div>
+      
+      <div className="qs-section">
+        <div 
+          className={`toggle-row ${localFilters?.enableCSharpAnalysis ? 'active' : ''}`}
+          onClick={() => updateLocalFilters({ enableCSharpAnalysis: !localFilters?.enableCSharpAnalysis })}
+        >
+          <span className="qs-title"><IconCode size={16}/> {t('quickSettings.enableCSharpAnalysis')}</span>
           <div className="toggle-switch" />
         </div>
       </div>

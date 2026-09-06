@@ -1,4 +1,4 @@
-import type { OptimizationRule } from './optimization.types';
+﻿import type { OptimizationRule } from './optimization.types';
 
 export interface WorkerInput {
   files: { handle: FileSystemFileHandle; path: string }[];
@@ -6,11 +6,12 @@ export interface WorkerInput {
   maxFileSizeBytes: number;
   isOptimizationEnabled?: boolean;
   optimizationRules?: OptimizationRule[];
+  enableCSharpAnalysis?: boolean;
 }
 
 export type WorkerOutput =
   | { type: 'progress'; progress: number }
-  | { type: 'done'; blob: Blob }
+  | { type: 'done'; blob: Blob; metaMap?: Record<string, string> }
   | { type: 'error'; error: string };
 
 export interface TokenizerInput {

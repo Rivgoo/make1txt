@@ -1,4 +1,4 @@
-export const en = {
+﻿export const en = {
   common: {
     cancel: 'Cancel',
     save: 'Save',
@@ -176,6 +176,7 @@ export const en = {
     showEmptyFolders: 'Show empty folders',
     generateStructure: 'Generate file structure',
     structureIncludeIgnored: 'Structure: include ignored',
+    enableCSharpAnalysis: 'C# Meta Analysis (Dependencies)',
     tokenWarningTitle: 'Large Project Detected',
     tokenWarningDesc: 'Showing estimated tokens because the selection exceeds 1M tokens. Calculating exact tokens may take time.',
     calculateExact: 'Calculate Exact Tokens',

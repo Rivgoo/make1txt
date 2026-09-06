@@ -1,4 +1,4 @@
-export const uk = {
+﻿export const uk = {
   common: {
     cancel: 'Скасувати',
     save: 'Зберегти',
@@ -176,6 +176,7 @@ export const uk = {
     showEmptyFolders: 'Показати порожні папки',
     generateStructure: 'Генерувати структуру файлів',
     structureIncludeIgnored: 'Структура: включати ігноровані',
+    enableCSharpAnalysis: 'C# Мета-аналіз (Залежності)',
     tokenWarningTitle: 'Знайдено великий проект',
     tokenWarningDesc: 'Показані приблизні токени, оскільки вибір перевищує 1М токенів. Точний підрахунок може зайняти час.',
     calculateExact: 'Порахувати точні токени',

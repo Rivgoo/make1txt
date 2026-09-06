@@ -1,13 +1,14 @@
-import type { FileNode, TreeSymbols } from '../types/file.types';
+﻿import type { FileNode, TreeSymbols } from '../types/file.types';
 
 interface TreeOptions {
   includeIgnored: boolean;
   symbols: TreeSymbols;
   showEmptyFolders: boolean;
+  metaMap?: Record<string, string>;
 }
 
 export function generateTextTree(nodes: FileNode[], options: TreeOptions): string {
-  const { includeIgnored, symbols, showEmptyFolders } = options;
+  const { includeIgnored, symbols, showEmptyFolders, metaMap } = options;
   
   let validNodes = includeIgnored 
     ? nodes 
@@ -70,14 +71,19 @@ export function generateTextTree(nodes: FileNode[], options: TreeOptions): strin
       const isSkipped = child.isIgnored || !child.isSelected;
       const ignoredMark = isSkipped ? symbols.ignoredSuffix : '';
       
+      // Inject C# metadata into the tree structure if present
+      const metaString = (!child.isDirectory && metaMap && metaMap[child.relativePath]) 
+        ? metaMap[child.relativePath] 
+        : '';
+      
       if (isAbsoluteRoot) {
-        output += `${child.name}${suffix}${ignoredMark}\n`;
+        output += `${child.name}${suffix}${ignoredMark}${metaString}\n`;
         if (child.isDirectory) {
           traverse(child.id, prefix);
         }
       } else {
         const pointer = isLast ? symbols.last : symbols.branch;
-        output += `${prefix}${pointer}${child.name}${suffix}${ignoredMark}\n`;
+        output += `${prefix}${pointer}${child.name}${suffix}${ignoredMark}${metaString}\n`;
         
         if (child.isDirectory) {
           const extension = isLast ? symbols.space : symbols.vertical;

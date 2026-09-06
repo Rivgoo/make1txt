@@ -1,4 +1,4 @@
-import type { StateCreator } from 'zustand';
+﻿import type { StateCreator } from 'zustand';
 import type { FileStore, ProfilesSlice } from '../store.types';
 import type { Profile } from '@/core/types/file.types';
 import { dbService } from '@/core/services/DatabaseService';
@@ -38,7 +38,8 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
         generateTree: localFilters.generateTree,
         treeIncludeIgnored: localFilters.treeIncludeIgnored,
         isOptimizationEnabled: localFilters.isOptimizationEnabled,
-        optimizationRules: localFilters.optimizationRules
+        optimizationRules: localFilters.optimizationRules,
+        enableCSharpAnalysis: localFilters.enableCSharpAnalysis
       }
     };
 
@@ -76,6 +77,7 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
           treeIncludeIgnored: savedFilters.treeIncludeIgnored ?? false,
           isOptimizationEnabled: savedFilters.isOptimizationEnabled ?? false,
           optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
+          enableCSharpAnalysis: savedFilters.enableCSharpAnalysis ?? true
         };
 
         const tempState = { ...state, globalSettings: mergedSettings, localFilters: newLocalFilters };

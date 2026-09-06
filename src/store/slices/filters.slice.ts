@@ -1,4 +1,4 @@
-import type { StateCreator } from 'zustand';
+﻿import type { StateCreator } from 'zustand';
 import type { FileStore, FiltersSlice } from '../store.types';
 import type { ExtensionStat } from '@/core/types/file.types';
 import { computeNodes, recompileAndRecalculate } from '../helpers/node.helper';
@@ -15,7 +15,8 @@ export const createFiltersSlice: StateCreator<FileStore, [], [], FiltersSlice> =
     treeIncludeIgnored: false,
     isOptimizationEnabled: false,
     isOptimizationDirty: false,
-    optimizationRules: PREDEFINED_OPTIMIZATION_RULES
+    optimizationRules: PREDEFINED_OPTIMIZATION_RULES,
+    enableCSharpAnalysis: true
   },
 
   updateLocalFilters: (newFilters) => {

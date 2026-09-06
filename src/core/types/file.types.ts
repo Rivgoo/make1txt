@@ -1,4 +1,4 @@
-import type { OptimizationRule } from './optimization.types';
+﻿import type { OptimizationRule } from './optimization.types';
 
 export interface FileSystemHandle {
   readonly kind: 'file' | 'directory';
@@ -79,6 +79,7 @@ export interface LocalFilters {
   isOptimizationEnabled: boolean;
   isOptimizationDirty: boolean;
   optimizationRules: OptimizationRule[];
+  enableCSharpAnalysis: boolean;
 }
 
 export interface SavedLocalFilters {
@@ -92,6 +93,7 @@ export interface SavedLocalFilters {
   isOptimizationEnabled: boolean;
   isOptimizationDirty?: boolean;
   optimizationRules: OptimizationRule[];
+  enableCSharpAnalysis?: boolean;
 }
 
 export interface Profile {

@@ -1,10 +1,13 @@
-import { useState, useRef, useCallback } from 'react';
+﻿import { useState, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFileStore } from '@/store/useFileStore';
 import { useToast } from '@/shared/context/useToast';
 import type { WorkerInput, WorkerOutput } from '@/core/types/worker.types';
 import { generateTextTree } from '@/core/utils/tree.utils';
 import { optimizeText } from '@/core/utils/optimization.utils';
+import { csharpAnalyzer, type FileMetaData } from '@/core/services/CSharpAnalyzer';
+
+const MAX_PARSE_SIZE = 500 * 1024;
 
 export function useGenerator() {
   const { t } = useTranslation();
@@ -35,13 +38,14 @@ export function useGenerator() {
   }, [showToast, t]);
 
   const assembleFinalText = useCallback(
-    (fileContentText: string): string => {
+    (fileContentText: string, metaMap?: Record<string, string>): string => {
       if (!localFilters?.generateTree) return fileContentText;
 
       const rawTree = generateTextTree(nodes, {
         includeIgnored: localFilters.treeIncludeIgnored,
         symbols: globalSettings.treeSymbols,
         showEmptyFolders: localFilters.showEmptyFolders,
+        metaMap
       });
 
       if (!rawTree) return fileContentText;
@@ -71,6 +75,8 @@ export function useGenerator() {
     const maxFileSizeBytes =
       globalSettings.maxFileSizeKb > 0 ? globalSettings.maxFileSizeKb * 1024 : 0;
 
+    const enableCSharpAnalysis = localFilters?.enableCSharpAnalysis ?? true;
+
     if (!isRestoredFromProfile) {
       workerRef.current = new Worker(
         new URL('@/core/workers/generator.worker.ts', import.meta.url),
@@ -84,7 +90,7 @@ export function useGenerator() {
           setProgress(data.progress);
         } else if (data.type === 'done') {
           const fileContentText = await data.blob.text();
-          const finalText = assembleFinalText(fileContentText);
+          const finalText = assembleFinalText(fileContentText, data.metaMap);
           setGeneratedText(finalText);
           setActiveTab('result');
           setIsGenerating(false);
@@ -113,60 +119,112 @@ export function useGenerator() {
         template: globalSettings.outputTemplate,
         maxFileSizeBytes,
         isOptimizationEnabled: localFilters?.isOptimizationEnabled ?? false,
-        optimizationRules: localFilters?.optimizationRules ?? []
+        optimizationRules: localFilters?.optimizationRules ?? [],
+        enableCSharpAnalysis
       };
       workerRef.current.postMessage(payload);
+
     } else {
+      // Fallback Main Thread Implementation
       const controller = new AbortController();
       abortControllerRef.current = controller;
       const { signal } = controller;
 
       try {
-        const total = selectedFiles.length;
+        if (enableCSharpAnalysis) {
+          const hasCSharp = selectedFiles.some(f => f.path.toLowerCase().endsWith('.cs'));
+          if (hasCSharp) {
+            try {
+              await csharpAnalyzer.init();
+            } catch (err) {
+              console.warn('[Fallback] Failed to init CSharpAnalyzer. Gracefully falling back.', err);
+            }
+          }
+        }
+
+        const totalSteps = selectedFiles.length * 2;
         let processed = 0;
         const BATCH_SIZE = 15;
-        const chunks: string[] = [];
+        
+        const fileTextCache = new Map<string, string>();
+        const fileMetaCache = new Map<string, FileMetaData>();
+        const globalClassRegistry = new Set<string>();
 
-        for (let i = 0; i < total; i += BATCH_SIZE) {
+        // PASS 1
+        for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
           if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-
           const batch = selectedFiles.slice(i, i + BATCH_SIZE);
 
-          const results = await Promise.all(
+          await Promise.all(
             batch.map(async (item) => {
               try {
                 const file = await item.handle.getFile();
-
                 if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
-                  return `[Skipped — file exceeds size limit: ${item.path}]\n`;
+                  fileTextCache.set(item.path, `[Skipped — file exceeds size limit: ${item.path}]\n`);
+                  return;
                 }
 
                 let text = await file.text();
-
                 if (localFilters?.isOptimizationEnabled && localFilters.optimizationRules?.length > 0) {
                   text = optimizeText(text, localFilters.optimizationRules).optimizedText;
                 }
+                
+                fileTextCache.set(item.path, text);
 
-                return globalSettings.outputTemplate
-                  .replace(/\{\{path\}\}/g, item.path)
-                  .replace(/\{\{content\}\}/g, text);
-              } catch {
-                return t('generator.fileError').replace('{{path}}', item.path) + '\n';
+                if (enableCSharpAnalysis && item.path.toLowerCase().endsWith('.cs') && file.size <= MAX_PARSE_SIZE) {
+                  const meta = csharpAnalyzer.parseFile(text);
+                  if (meta) {
+                    meta.classes.forEach(c => globalClassRegistry.add(c.name));
+                    fileMetaCache.set(item.path, meta);
+                  }
+                }
+              } catch (err) {
+                console.warn(`[Fallback] Exception while reading file ${item.path}:`, err);
+                fileTextCache.set(item.path, t('generator.fileError').replace('{{path}}', item.path) + '\n');
               }
-            }),
+            })
           );
 
-          chunks.push(...results);
           processed += batch.length;
-          setProgress(Math.round((processed / total) * 100));
+          setProgress(Math.round((processed / totalSteps) * 100));
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        }
 
+        if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
+        // PASS 2
+        const chunks: string[] = [];
+        const formattedMetaMap: Record<string, string> = {};
+
+        for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
+          if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+          const batch = selectedFiles.slice(i, i + BATCH_SIZE);
+
+          batch.forEach((item) => {
+            const text = fileTextCache.get(item.path);
+            if (text !== undefined) {
+              if (enableCSharpAnalysis && fileMetaCache.has(item.path)) {
+                const metaStr = csharpAnalyzer.formatTreeMetaData(fileMetaCache.get(item.path)!, globalClassRegistry);
+                if (metaStr) formattedMetaMap[item.path] = metaStr;
+              }
+              
+              const finalBlock = globalSettings.outputTemplate
+                .replace(/\{\{path\}\}/g, item.path)
+                .replace(/\{\{content\}\}/g, text);
+                
+              chunks.push(finalBlock);
+            }
+          });
+
+          processed += batch.length;
+          setProgress(Math.round((processed / totalSteps) * 100));
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
         }
 
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
         const fileContentText = chunks.join('');
-        const finalText = assembleFinalText(fileContentText);
+        const finalText = assembleFinalText(fileContentText, formattedMetaMap);
         setGeneratedText(finalText);
         setActiveTab('result');
         setProgress(100);

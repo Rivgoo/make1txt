@@ -231,3 +231,4 @@ sql
 *.Cache
 [Ss]tyle[Cc]op.*
 ~$*
+ai.ps1
