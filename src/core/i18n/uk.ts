@@ -165,7 +165,9 @@
     deletedSuccess: 'Профіль успішно видалено.',
     deleteError: 'Не вдалося видалити профіль.',
     loadedWithDir: 'Директорію та налаштування успішно відновлено.',
-    loadedSettingsOnly: 'Профіль застосовано без прив\'язки до папки.'
+    loadedSettingsOnly: 'Профіль застосовано без прив\'язки до папки.',
+    saveChanges: 'Зберегти зміни',
+    changesSaved: 'Профіль успішно оновлено.'
   },
   quickSettings: {
     extensions: 'Розширення файлів',

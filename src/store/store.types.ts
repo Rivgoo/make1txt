@@ -1,4 +1,4 @@
-import type { 
+﻿import type { 
   FileNode, GeneratorStats, Profile, GlobalSettings, LocalFilters 
 } from '@/core/types/file.types';
 import type { OptimizationRule } from '@/core/types/optimization.types';
@@ -80,10 +80,16 @@ export interface TokenizationSlice {
 
 export interface ProfilesSlice {
   profiles: Profile[];
+  activeProfileId: string | null;
+  activeProfileSnapshot: Profile | null;
+  hasUnsavedProfileChanges: boolean;
+
   fetchProfiles: () => Promise<void>;
   saveCurrentProfile: (name: string, saveDirectory: boolean) => Promise<void>;
   loadProfile: (profile: Profile) => Promise<void>;
   deleteProfile: (id: string) => Promise<void>;
+  checkProfileChanges: () => void;
+  saveActiveProfileChanges: () => Promise<void>;
 }
 
 export interface OptimizationSlice {

@@ -9,6 +9,9 @@ import { DEFAULT_GLOBAL_SETTINGS } from '../constants';
 
 export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice> = (set, get) => ({
   profiles: [],
+  activeProfileId: null,
+  activeProfileSnapshot: null,
+  hasUnsavedProfileChanges: false,
 
   fetchProfiles: async () => {
     const data = await dbService.getAllProfiles();
@@ -45,6 +48,12 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
 
     await dbService.saveProfile(profile);
     await get().fetchProfiles();
+
+    set({ 
+      activeProfileId: profile.id, 
+      activeProfileSnapshot: profile, 
+      hasUnsavedProfileChanges: false 
+    });
   },
 
   loadProfile: async (profile) => {
@@ -53,6 +62,12 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
     const updatedProfile = { ...profile, lastUsed: Date.now() };
     await dbService.saveProfile(updatedProfile);
     await get().fetchProfiles();
+
+    set({ 
+      activeProfileId: updatedProfile.id, 
+      activeProfileSnapshot: updatedProfile, 
+      hasUnsavedProfileChanges: false 
+    });
 
     if (profile.directoryHandle) {
       await get().loadDirectoryFromHandle(profile.directoryHandle, profile, true);
@@ -95,6 +110,77 @@ export const createProfilesSlice: StateCreator<FileStore, [], [], ProfilesSlice>
 
   deleteProfile: async (id) => {
     await dbService.deleteProfile(id);
+    
+    if (get().activeProfileId === id) {
+      set({ 
+        activeProfileId: null, 
+        activeProfileSnapshot: null, 
+        hasUnsavedProfileChanges: false 
+      });
+    }
+
     await get().fetchProfiles();
+  },
+
+  checkProfileChanges: () => {
+    const { activeProfileSnapshot, globalSettings, localFilters } = get();
+    if (!activeProfileSnapshot) return;
+
+    const hiddenExtensions = Object.entries(localFilters.extensions)
+      .filter(([, stat]) => !stat.isActive)
+      .map(([ext]) => ext);
+
+    const currentSavedFilters = {
+      hiddenExtensions,
+      customPatterns: localFilters.customPatterns,
+      showGloballyIgnored: localFilters.showGloballyIgnored,
+      showLocallyIgnored: localFilters.showLocallyIgnored,
+      showEmptyFolders: localFilters.showEmptyFolders,
+      generateTree: localFilters.generateTree,
+      treeIncludeIgnored: localFilters.treeIncludeIgnored,
+      isOptimizationEnabled: localFilters.isOptimizationEnabled,
+      optimizationRules: localFilters.optimizationRules,
+      enableCSharpAnalysis: localFilters.enableCSharpAnalysis
+    };
+
+    const isSettingsChanged = JSON.stringify(globalSettings) !== JSON.stringify(activeProfileSnapshot.settings);
+    const isFiltersChanged = JSON.stringify(currentSavedFilters) !== JSON.stringify(activeProfileSnapshot.localFilters);
+
+    set({ hasUnsavedProfileChanges: isSettingsChanged || isFiltersChanged });
+  },
+
+  saveActiveProfileChanges: async () => {
+    const { activeProfileSnapshot, globalSettings, localFilters } = get();
+    if (!activeProfileSnapshot) return;
+
+    const hiddenExtensions = Object.entries(localFilters.extensions)
+      .filter(([, stat]) => !stat.isActive)
+      .map(([ext]) => ext);
+
+    const updatedProfile: Profile = {
+      ...activeProfileSnapshot,
+      lastUsed: Date.now(),
+      settings: globalSettings,
+      localFilters: {
+        hiddenExtensions,
+        customPatterns: localFilters.customPatterns,
+        showGloballyIgnored: localFilters.showGloballyIgnored,
+        showLocallyIgnored: localFilters.showLocallyIgnored,
+        showEmptyFolders: localFilters.showEmptyFolders,
+        generateTree: localFilters.generateTree,
+        treeIncludeIgnored: localFilters.treeIncludeIgnored,
+        isOptimizationEnabled: localFilters.isOptimizationEnabled,
+        optimizationRules: localFilters.optimizationRules,
+        enableCSharpAnalysis: localFilters.enableCSharpAnalysis
+      }
+    };
+
+    await dbService.saveProfile(updatedProfile);
+    await get().fetchProfiles();
+
+    set({ 
+      activeProfileSnapshot: updatedProfile, 
+      hasUnsavedProfileChanges: false 
+    });
   }
 });

@@ -165,7 +165,9 @@
     deletedSuccess: 'Profile deleted successfully.',
     deleteError: 'Failed to delete profile.',
     loadedWithDir: 'Directory and settings successfully restored.',
-    loadedSettingsOnly: 'Profile applied without directory binding.'
+    loadedSettingsOnly: 'Profile applied without directory binding.',
+    saveChanges: 'Save Changes',
+    changesSaved: 'Profile updated successfully.'
   },
   quickSettings: {
     extensions: 'File Extensions',

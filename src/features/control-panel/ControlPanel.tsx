@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconDeviceFloppy, IconSquareX, IconSettings, 
@@ -30,9 +30,20 @@ export function ControlPanel() {
   });
 
   const { isGenerating, progress, startGeneration, cancelGeneration } = useGenerator();
-  const { fetchProfiles, getStats, isLoading, isTokenizing, tokenizationProgress, localFilters, nodes, loadDirectory } = useFileStore();
+  const { 
+    fetchProfiles, getStats, isLoading, isTokenizing, tokenizationProgress, 
+    localFilters, globalSettings, nodes, loadDirectory, checkProfileChanges, 
+    hasUnsavedProfileChanges, saveActiveProfileChanges 
+  } = useFileStore();
+  
   const { showToast } = useToast();
   const stats = getStats();
+
+  useEffect(() => {
+    if (!isLoading && !isTokenizing) {
+      checkProfileChanges();
+    }
+  }, [globalSettings, localFilters, isLoading, isTokenizing, checkProfileChanges]);
 
   useHotkey('enter', true, () => {
     if (!isGenerating && stats.selectedFiles > 0 && !isLoading) {
@@ -50,6 +61,15 @@ export function ControlPanel() {
     try {
       await fetchProfiles();
       setIsProfilesOpen(true);
+    } catch {
+      showToast('error', t('common.error'), t('profiles.saveError'));
+    }
+  };
+
+  const handleSaveActiveProfile = async () => {
+    try {
+      await saveActiveProfileChanges();
+      showToast('success', t('common.success'), t('profiles.changesSaved'));
     } catch {
       showToast('error', t('common.error'), t('profiles.saveError'));
     }
@@ -77,6 +97,9 @@ export function ControlPanel() {
   const hasSavings = localFilters?.isOptimizationEnabled && hasMeaningfulOptimization(stats.totalSizeBytes, stats.totalOptimizedBytes);
   const savedTokens = stats.baseTokens - stats.tokens;
 
+  // Don't show save button while scanning/tokenizing
+  const shouldShowSaveButton = hasUnsavedProfileChanges && !isLoading && !isTokenizing;
+
   if (nodes.length === 0 && !isLoading) {
     return (
       <aside className="panel-right">
@@ -93,9 +116,16 @@ export function ControlPanel() {
              <Button variant="secondary" onClick={() => setIsAdvancedOpen(true)} isFullWidth>
                <IconSettings size={20} /> {t('panel.settings')}
              </Button>
-             <Button variant="secondary" onClick={handleOpenProfiles} isFullWidth>
-               <IconDeviceFloppy size={20} /> {t('panel.profiles')}
-             </Button>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+               {shouldShowSaveButton && (
+                 <Button variant="primary" onClick={handleSaveActiveProfile} title={t('profiles.saveChanges')} isFullWidth>
+                   <IconDeviceFloppy size={20} /> {t('profiles.saveChanges')}
+                 </Button>
+               )}
+               <Button variant="secondary" onClick={handleOpenProfiles} isFullWidth>
+                 <IconDeviceFloppy size={20} /> {t('panel.profiles')}
+               </Button>
+             </div>
            </div>
         </div>
         <ProfilesModal isOpen={isProfilesOpen} onClose={() => setIsProfilesOpen(false)} />
@@ -106,17 +136,24 @@ export function ControlPanel() {
 
   return (
     <aside className="panel-right">
-      <header className="panel-header" style={{ gap: 'var(--spacing-xs)' }}>
-        <h2 style={{ fontSize: '1.25rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <header className="panel-header" style={{ gap: 'var(--spacing-xs)', flexWrap: 'wrap' }}>
+        <h2 style={{ fontSize: '1.25rem', flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
           <IconAdjustments size={24} color="var(--accent-primary)" />
           {t('panel.settings')}
         </h2>
-        <Button variant="secondary" onClick={() => setIsAdvancedOpen(true)}>
-          <IconSettings size={18} />
-        </Button>
-        <Button variant="secondary" onClick={handleOpenProfiles} disabled={isGenerating || isLoading}>
-          <IconDeviceFloppy size={18} /> {t('panel.profiles')}
-        </Button>
+        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={() => setIsAdvancedOpen(true)}>
+            <IconSettings size={18} />
+          </Button>
+          {shouldShowSaveButton && (
+            <Button variant="primary" onClick={handleSaveActiveProfile} title={t('profiles.saveChanges')}>
+              <IconDeviceFloppy size={18} /> {t('profiles.saveChanges')}
+            </Button>
+          )}
+          <Button variant="secondary" onClick={handleOpenProfiles} disabled={isGenerating || isLoading}>
+            <IconDeviceFloppy size={18} /> {t('panel.profiles')}
+          </Button>
+        </div>
       </header>
       
       <main className="panel-content">
