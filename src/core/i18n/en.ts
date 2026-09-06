@@ -232,5 +232,13 @@
     optimizedSize: 'Optimized Size',
     tokensSaved: 'Tokens Saved',
     optimized: 'Optimized'
+  },
+  sync: {
+    loadingTitle: 'Syncing with IDE...',
+    loadingDesc: 'Securely transferring your workspace context via localhost bridge.',
+    errorTitle: 'Connection Failed',
+    errorDesc: 'Could not fetch data from your IDE. The server might have timed out or the token is invalid.',
+    goHome: 'Go to Home',
+    successMessage: 'Workspace synced successfully.'
   }
 };

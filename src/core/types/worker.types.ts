@@ -1,7 +1,7 @@
 ﻿import type { OptimizationRule } from './optimization.types';
 
 export interface WorkerInput {
-  files: { handle: FileSystemFileHandle; path: string }[];
+  files: { handle: FileSystemFileHandle | null; path: string; content?: string }[];
   template: string;
   maxFileSizeBytes: number;
   isOptimizationEnabled?: boolean;
@@ -15,7 +15,7 @@ export type WorkerOutput =
   | { type: 'error'; error: string };
 
 export interface TokenizerInput {
-  files: { id: string; handle: FileSystemFileHandle }[];
+  files: { id: string; handle: FileSystemFileHandle | null; content?: string; sizeBytes: number }[];
   isOptimizationEnabled?: boolean;
   optimizationRules?: OptimizationRule[];
   skipTiktoken?: boolean;

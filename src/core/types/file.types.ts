@@ -11,7 +11,8 @@ export interface FileNode {
   relativePath: string;
   isDirectory: boolean;
   sizeBytes: number;
-  handle: FileSystemHandle;
+  handle: FileSystemHandle | null;
+  content?: string;
   depth: number;
   parentId: string | null;
   isSelected: boolean;
@@ -19,6 +20,15 @@ export interface FileNode {
   isGloballyIgnored: boolean;
   isLocallyIgnored: boolean;
   isExpanded: boolean;
+}
+
+export interface IdeSyncPayload {
+  projectName: string;
+  files: {
+    path: string;
+    content: string;
+    size: number;
+  }[];
 }
 
 export interface GeneratorStats {

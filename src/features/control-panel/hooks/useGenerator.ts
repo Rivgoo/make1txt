@@ -60,9 +60,14 @@ export function useGenerator() {
   );
 
   const startGeneration = useCallback(async () => {
+    // ВИПРАВЛЕНО: Додано content до мапа
     const selectedFiles = nodes
       .filter((n) => n.isSelected && !n.isIgnored && !n.isDirectory)
-      .map((n) => ({ handle: n.handle as FileSystemFileHandle, path: n.relativePath }));
+      .map((n) => ({ 
+        handle: n.handle as FileSystemFileHandle | null, 
+        path: n.relativePath,
+        content: n.content 
+      }));
 
     if (selectedFiles.length === 0) {
       showToast('warning', t('common.warning'), t('generator.empty'));
@@ -159,23 +164,34 @@ export function useGenerator() {
           await Promise.all(
             batch.map(async (item) => {
               try {
-                const file = await item.handle.getFile();
                 const isCSharp = item.path.toLowerCase().endsWith('.cs');
                 const isAsmdef = item.path.toLowerCase().endsWith('.asmdef');
 
-                if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
+                // ВИПРАВЛЕНО: Читання з пам'яті для Fallback
+                let text = '';
+                let size = 0;
+
+                if (item.content !== undefined) {
+                  text = item.content;
+                  size = new Blob([text]).size;
+                } else if (item.handle) {
+                  const file = await item.handle.getFile();
+                  text = await file.text();
+                  size = file.size;
+                }
+
+                if (maxFileSizeBytes > 0 && size > maxFileSizeBytes) {
                   fileTextCache.set(item.path, `[Skipped — file exceeds size limit: ${item.path}]\n`);
                   return;
                 }
 
-                let text = await file.text();
                 if (localFilters?.isOptimizationEnabled && localFilters.optimizationRules?.length > 0) {
                   text = optimizeText(text, localFilters.optimizationRules).optimizedText;
                 }
                 
                 fileTextCache.set(item.path, text);
 
-                if (enableCSharpAnalysis && isCSharp && file.size <= MAX_PARSE_SIZE) {
+                if (enableCSharpAnalysis && isCSharp && size <= MAX_PARSE_SIZE) {
                   const meta = csharpAnalyzer.parseFile(text);
                   if (meta) {
                     meta.classes.forEach(c => globalTypeRegistry.add(c.name));

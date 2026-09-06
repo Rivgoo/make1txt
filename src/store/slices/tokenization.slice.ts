@@ -53,10 +53,16 @@ export const createTokenizationSlice: StateCreator<FileStore, [], [], Tokenizati
 
     const skipTiktoken = !force && needsManualTokenization;
 
+    // ВИПРАВЛЕНО: Додано content та sizeBytes до payload
     const filesToTokenize = nodes
       .filter(n => !n.isDirectory && n.isSelected && !n.isIgnored && 
         (realTokenMap[n.id] === undefined || optimizedBytesMap[n.id] === undefined))
-      .map(n => ({ id: n.id, handle: n.handle as FileSystemFileHandle }));
+      .map(n => ({ 
+        id: n.id, 
+        handle: n.handle as FileSystemFileHandle | null,
+        content: n.content,
+        sizeBytes: n.sizeBytes
+      }));
 
     if (filesToTokenize.length === 0) return;
 
