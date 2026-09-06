@@ -3,7 +3,7 @@ import { optimizeText } from '../utils/optimization.utils';
 import { csharpAnalyzer, type FileMetaData } from '../services/CSharpAnalyzer';
 
 const PROGRESS_BATCH = 10;
-const MAX_PARSE_SIZE = 500 * 1024; // 500 KB limit for AST parsing
+const MAX_PARSE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   const { 
@@ -26,14 +26,15 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       try {
         await csharpAnalyzer.init();
       } catch (err) {
-        console.warn('[Worker] Failed to init CSharpAnalyzer. Gracefully falling back to raw output.', err);
+        console.warn('[Worker] Failed to init CSharpAnalyzer. Gracefully falling back.', err);
       }
     }
   }
 
   const fileTextCache = new Map<string, Blob>();
   const fileMetaCache = new Map<string, FileMetaData>();
-  const globalClassRegistry = new Set<string>();
+  const asmdefMetaCache = new Map<string, string>();
+  const globalTypeRegistry = new Set<string>();
 
   let processed = 0;
   const totalSteps = files.length * 2; 
@@ -42,6 +43,8 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   for (const item of files) {
     try {
       const file = await item.handle.getFile();
+      const isCSharp = item.path.toLowerCase().endsWith('.cs');
+      const isAsmdef = item.path.toLowerCase().endsWith('.asmdef');
 
       if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
         const skipMsg = `[Skipped — file exceeds size limit: ${item.path}]\n`;
@@ -55,11 +58,36 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
 
         fileTextCache.set(item.path, new Blob([text], { type: 'text/plain;charset=utf-8' }));
 
-        if (enableCSharpAnalysis && item.path.toLowerCase().endsWith('.cs') && file.size <= MAX_PARSE_SIZE) {
+        if (enableCSharpAnalysis && isCSharp && file.size <= MAX_PARSE_SIZE) {
           const meta = csharpAnalyzer.parseFile(text);
           if (meta) {
-            meta.classes.forEach(c => globalClassRegistry.add(c.name));
+            // Register ALL types into global registry for perfect graph resolution
+            meta.classes.forEach(c => globalTypeRegistry.add(c.name));
+            meta.interfaces.forEach(i => globalTypeRegistry.add(i.name));
+            meta.structs.forEach(s => globalTypeRegistry.add(s.name));
+            meta.records.forEach(r => globalTypeRegistry.add(r.name));
+            meta.enums.forEach(e => globalTypeRegistry.add(e));
+            meta.delegates.forEach(d => globalTypeRegistry.add(d));
+
             fileMetaCache.set(item.path, meta);
+          }
+        } else if (enableCSharpAnalysis && isAsmdef) {
+          try {
+            const cleanJson = text.replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (m, g) => g ? "" : m);
+            const parsed = JSON.parse(cleanJson);
+            const modName = parsed.name || "Unknown";
+            const rawRefs: string[] = parsed.references || [];
+            
+            const cleanRefs = rawRefs
+              .filter(r => !r.startsWith('GUID:'))
+              .map(r => r.split('/').pop() || r);
+
+            let asmdefMeta = `Module: ${modName}`;
+            if (cleanRefs.length > 0) asmdefMeta += ` ✦ Refs: ${cleanRefs.join(', ')}`;
+            
+            asmdefMetaCache.set(item.path, ` -> [ ${asmdefMeta} ]`);
+          } catch {
+            console.warn(`[Worker] Failed to parse asmdef: ${item.path}`);
           }
         }
       }
@@ -87,15 +115,22 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
       if (cachedBlob) {
         const text = await cachedBlob.text();
         
-        // Build map for the tree generator instead of injecting into text
-        if (enableCSharpAnalysis && fileMetaCache.has(item.path)) {
-          const metaStr = csharpAnalyzer.formatTreeMetaData(fileMetaCache.get(item.path)!, globalClassRegistry);
-          if (metaStr) formattedMetaMap[item.path] = metaStr;
+        if (enableCSharpAnalysis) {
+          if (fileMetaCache.has(item.path)) {
+            const metaStr = csharpAnalyzer.formatTreeMetaData(fileMetaCache.get(item.path)!, globalTypeRegistry);
+            if (metaStr) formattedMetaMap[item.path] = metaStr;
+          } else if (asmdefMetaCache.has(item.path)) {
+            formattedMetaMap[item.path] = asmdefMetaCache.get(item.path)!;
+          }
         }
         
+        const extMatch = item.path.match(/\.([^.]+)$/);
+        const fileExt = extMatch ? extMatch[1].toLowerCase() : '';
+
         const finalBlock = template
           .replace(/\{\{path\}\}/g, item.path)
-          .replace(/\{\{content\}\}/g, text); // No longer injecting meta block here
+          .replace(/\{\{ext\}\}/g, fileExt)
+          .replace(/\{\{content\}\}/g, text); 
 
         chunks.push(new Blob([finalBlock], { type: 'text/plain;charset=utf-8' }));
       }

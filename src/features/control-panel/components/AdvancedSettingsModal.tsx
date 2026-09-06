@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   IconRestore, IconCode, IconFileZip, IconPlus, IconX, IconBinaryTree, 
@@ -10,7 +10,7 @@ import { Select } from '@/shared/ui/Select/Select';
 import { useFileStore, DEFAULT_GLOBAL_SETTINGS, DEFAULT_TREE_SYMBOLS } from '@/store/useFileStore';
 import { generateTextTree } from '@/core/utils/tree.utils';
 import { evaluateFileName } from '@/core/utils/export.utils';
-import type { FileNode, FileSystemHandle } from '@/core/types/file.types';
+import type { FileNode, FileSystemHandle, FileDelimiterFormat } from '@/core/types/file.types';
 import './AdvancedSettingsModal.css';
 
 const fakeHandle = { kind: 'file', name: 'fake' } as FileSystemHandle;
@@ -46,11 +46,10 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
   const [newExt, setNewExt] = useState('');
   const [newPath, setNewPath] = useState('');
 
-  const PRESETS = [
-    { name: 'Standard', template: '================================================================\nFile: {{path}}\n================================================================\n\n{{content}}\n\n' },
-    { name: 'Minimal', template: '--- {{path}} ---\n{{content}}\n' },
-    { name: 'Markdown', template: '### `{{path}}`\n```\n{{content}}\n```\n\n' }
-  ];
+  const TEMPLATES: Record<string, string> = {
+    markdown: '### `${{path}}`\n```{{ext}}\n{{content}}\n```\n\n',
+    classic: '================================================================\nFile: {{path}}\n================================================================\n\n{{content}}\n\n'
+  };
 
   const TREE_PRESETS = [
     { name: 'ASCII', symbols: DEFAULT_TREE_SYMBOLS },
@@ -84,6 +83,19 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
     }
   };
 
+  const handleFormatChange = (val: string) => {
+    const format = val as FileDelimiterFormat;
+    if (format === 'custom') {
+      setLocal({ ...local, fileDelimiterFormat: format });
+    } else {
+      setLocal({ 
+        ...local, 
+        fileDelimiterFormat: format,
+        outputTemplate: TEMPLATES[format]
+      });
+    }
+  };
+
   const addExt = () => {
     const val = newExt.trim().toLowerCase();
     if (val && !local.ignoredExtensions.includes(val)) {
@@ -110,6 +122,7 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
 
   const previewText = (local.outputTemplate || DEFAULT_GLOBAL_SETTINGS.outputTemplate)
     .replace(/{{path}}/g, 'src/main.ts')
+    .replace(/{{ext}}/g, 'ts')
     .replace(/{{content}}/g, 'console.log("Hello World");');
 
   const treePreviewRaw = generateTextTree(MOCK_TREE_NODES as FileNode[], {
@@ -140,6 +153,12 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
   const strategyOptions = [
     { value: 'default', label: t('settings.labels.strategyDefault') },
     { value: 'ask', label: t('settings.labels.strategyAsk') }
+  ];
+
+  const formatOptions = [
+    { value: 'markdown', label: t('settings.labels.formatMarkdown') },
+    { value: 'classic', label: t('settings.labels.formatClassic') },
+    { value: 'custom', label: t('settings.labels.formatCustom') }
   ];
 
   return (
@@ -311,26 +330,21 @@ export function AdvancedSettingsModal({ isOpen, onClose }: Props) {
         <div className="as-section">
           <h4><IconCode size={18}/> {t('settings.sections.formatting')}</h4>
           <div className="as-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label>{t('settings.labels.outputTemplate')}</label>
-              <div className="as-presets-row">
-                {PRESETS.map(preset => (
-                  <Button 
-                    key={preset.name} 
-                    variant="secondary" 
-                    onClick={() => setLocal({ ...local, outputTemplate: preset.template })}
-                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
-                  >
-                    {preset.name}
-                  </Button>
-                ))}
-              </div>
-            </div>
             
+            <div style={{ marginBottom: 'var(--spacing-sm)' }}>
+               <label>{t('settings.labels.fileDelimiterFormat')}</label>
+               <Select 
+                 options={formatOptions}
+                 value={local.fileDelimiterFormat || 'markdown'}
+                 onChange={handleFormatChange}
+               />
+            </div>
+
+            <label>{t('settings.labels.outputTemplate')}</label>
             <textarea 
               className="as-textarea"
               value={local.outputTemplate || DEFAULT_GLOBAL_SETTINGS.outputTemplate}
-              onChange={(e) => setLocal({ ...local, outputTemplate: e.target.value })}
+              onChange={(e) => setLocal({ ...local, outputTemplate: e.target.value, fileDelimiterFormat: 'custom' })}
             />
 
             <div className="as-preview-box">

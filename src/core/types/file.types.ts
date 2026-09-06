@@ -41,6 +41,7 @@ export interface TreeSymbols {
 }
 
 export type SaveStrategy = 'default' | 'ask';
+export type FileDelimiterFormat = 'markdown' | 'classic' | 'custom';
 
 export interface GlobalSettings {
   language: 'auto' | 'en' | 'uk';
@@ -49,6 +50,7 @@ export interface GlobalSettings {
   ignoredPaths: string[];
   useGitignore: boolean;
   pruneIgnoredOnRead: boolean;
+  fileDelimiterFormat: FileDelimiterFormat;
   outputTemplate: string;
   treePlacement: 'top' | 'bottom';
   treeWrapper: string;

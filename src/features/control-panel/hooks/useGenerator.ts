@@ -7,7 +7,7 @@ import { generateTextTree } from '@/core/utils/tree.utils';
 import { optimizeText } from '@/core/utils/optimization.utils';
 import { csharpAnalyzer, type FileMetaData } from '@/core/services/CSharpAnalyzer';
 
-const MAX_PARSE_SIZE = 500 * 1024;
+const MAX_PARSE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export function useGenerator() {
   const { t } = useTranslation();
@@ -125,7 +125,7 @@ export function useGenerator() {
       workerRef.current.postMessage(payload);
 
     } else {
-      // Fallback Main Thread Implementation
+      // Fallback
       const controller = new AbortController();
       abortControllerRef.current = controller;
       const { signal } = controller;
@@ -148,7 +148,8 @@ export function useGenerator() {
         
         const fileTextCache = new Map<string, string>();
         const fileMetaCache = new Map<string, FileMetaData>();
-        const globalClassRegistry = new Set<string>();
+        const asmdefMetaCache = new Map<string, string>();
+        const globalTypeRegistry = new Set<string>();
 
         // PASS 1
         for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
@@ -159,6 +160,9 @@ export function useGenerator() {
             batch.map(async (item) => {
               try {
                 const file = await item.handle.getFile();
+                const isCSharp = item.path.toLowerCase().endsWith('.cs');
+                const isAsmdef = item.path.toLowerCase().endsWith('.asmdef');
+
                 if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
                   fileTextCache.set(item.path, `[Skipped — file exceeds size limit: ${item.path}]\n`);
                   return;
@@ -171,11 +175,32 @@ export function useGenerator() {
                 
                 fileTextCache.set(item.path, text);
 
-                if (enableCSharpAnalysis && item.path.toLowerCase().endsWith('.cs') && file.size <= MAX_PARSE_SIZE) {
+                if (enableCSharpAnalysis && isCSharp && file.size <= MAX_PARSE_SIZE) {
                   const meta = csharpAnalyzer.parseFile(text);
                   if (meta) {
-                    meta.classes.forEach(c => globalClassRegistry.add(c.name));
+                    meta.classes.forEach(c => globalTypeRegistry.add(c.name));
+                    meta.interfaces.forEach(i => globalTypeRegistry.add(i.name));
+                    meta.structs.forEach(s => globalTypeRegistry.add(s.name));
+                    meta.records.forEach(r => globalTypeRegistry.add(r.name));
+                    meta.enums.forEach(e => globalTypeRegistry.add(e));
+                    meta.delegates.forEach(d => globalTypeRegistry.add(d));
+
                     fileMetaCache.set(item.path, meta);
+                  }
+                } else if (enableCSharpAnalysis && isAsmdef) {
+                  try {
+                    const cleanJson = text.replace(/\\"|"(?:\\"|[^"])*"|(\/\/.*|\/\*[\s\S]*?\*\/)/g, (m, g) => g ? "" : m);
+                    const parsed = JSON.parse(cleanJson);
+                    const modName = parsed.name || "Unknown";
+                    const rawRefs: string[] = parsed.references || [];
+                    const cleanRefs = rawRefs.filter(r => !r.startsWith('GUID:')).map(r => r.split('/').pop() || r);
+
+                    let asmdefMeta = `Module: ${modName}`;
+                    if (cleanRefs.length > 0) asmdefMeta += ` ✦ Refs: ${cleanRefs.join(', ')}`;
+                    
+                    asmdefMetaCache.set(item.path, ` -> [ ${asmdefMeta} ]`);
+                  } catch {
+                    console.warn(`[Fallback] Failed to parse asmdef: ${item.path}`);
                   }
                 }
               } catch (err) {
@@ -203,13 +228,21 @@ export function useGenerator() {
           batch.forEach((item) => {
             const text = fileTextCache.get(item.path);
             if (text !== undefined) {
-              if (enableCSharpAnalysis && fileMetaCache.has(item.path)) {
-                const metaStr = csharpAnalyzer.formatTreeMetaData(fileMetaCache.get(item.path)!, globalClassRegistry);
-                if (metaStr) formattedMetaMap[item.path] = metaStr;
+              if (enableCSharpAnalysis) {
+                if (fileMetaCache.has(item.path)) {
+                  const metaStr = csharpAnalyzer.formatTreeMetaData(fileMetaCache.get(item.path)!, globalTypeRegistry);
+                  if (metaStr) formattedMetaMap[item.path] = metaStr;
+                } else if (asmdefMetaCache.has(item.path)) {
+                  formattedMetaMap[item.path] = asmdefMetaCache.get(item.path)!;
+                }
               }
               
+              const extMatch = item.path.match(/\.([^.]+)$/);
+              const fileExt = extMatch ? extMatch[1].toLowerCase() : '';
+
               const finalBlock = globalSettings.outputTemplate
                 .replace(/\{\{path\}\}/g, item.path)
+                .replace(/\{\{ext\}\}/g, fileExt)
                 .replace(/\{\{content\}\}/g, text);
                 
               chunks.push(finalBlock);

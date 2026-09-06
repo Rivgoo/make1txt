@@ -34,6 +34,8 @@ export function QuickSettings() {
   const extensions = localFilters?.extensions || {};
   const sortedExtensions = Object.entries(extensions).sort((a, b) => b[1].count - a[1].count);
 
+  const hasCsFiles = nodes.some(n => !n.isDirectory && n.name.toLowerCase().endsWith('.cs'));
+
   const handleAddPattern = () => {
     if (!newPattern.trim()) return;
     if (!isValidGlobOrRegex(newPattern.trim())) {
@@ -347,8 +349,13 @@ export function QuickSettings() {
       
       <div className="qs-section">
         <div 
-          className={`toggle-row ${localFilters?.enableCSharpAnalysis ? 'active' : ''}`}
-          onClick={() => updateLocalFilters({ enableCSharpAnalysis: !localFilters?.enableCSharpAnalysis })}
+          className={`toggle-row ${!hasCsFiles ? 'disabled' : (localFilters?.enableCSharpAnalysis ? 'active' : '')}`}
+          onClick={() => {
+            if (!hasCsFiles) return;
+            updateLocalFilters({ enableCSharpAnalysis: !localFilters?.enableCSharpAnalysis });
+          }}
+          data-tooltip={!hasCsFiles ? "No .cs files in project" : undefined}
+          data-tooltip-pos="top"
         >
           <span className="qs-title"><IconCode size={16}/> {t('quickSettings.enableCSharpAnalysis')}</span>
           <div className="toggle-switch" />

@@ -1,4 +1,4 @@
-import type { StateCreator } from 'zustand';
+﻿import type { StateCreator } from 'zustand';
 import type { FileStore, DirectorySlice } from '../store.types';
 import type { FileNode, LocalFilters } from '@/core/types/file.types';
 import { requestDirectoryAccess, readDirectoryRecursively, verifyDirectoryPermission } from '@/core/services/FileSystemService';
@@ -118,6 +118,8 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
       const rawNodes = [rootNode, ...rawChildren];
       const extMap = buildExtMap(rawNodes, activeGlobalSettings, {});
       
+      const hasCsFiles = rawNodes.some(n => !n.isDirectory && n.name.toLowerCase().endsWith('.cs'));
+
       let localFiltersToApply: Partial<LocalFilters> = {};
       if (applyProfile) {
         const savedFilters = applyProfile.localFilters;
@@ -136,8 +138,13 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           isOptimizationEnabled: savedFilters.isOptimizationEnabled ?? false,
           isOptimizationDirty: savedFilters.isOptimizationDirty ?? false,
           optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
+          // Only auto-disable if no .cs files exist, otherwise preserve profile/user setting
+          enableCSharpAnalysis: hasCsFiles ? (savedFilters.enableCSharpAnalysis ?? true) : false
         };
       }
+
+      const currentChoice = get().localFilters?.enableCSharpAnalysis ?? true;
+      const finalEnableCSharp = hasCsFiles ? (localFiltersToApply.enableCSharpAnalysis ?? currentChoice) : false;
 
       const initialState = { 
         ...get(),
@@ -155,6 +162,7 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           isOptimizationEnabled: localFiltersToApply.isOptimizationEnabled ?? false,
           isOptimizationDirty: localFiltersToApply.isOptimizationDirty ?? false,
           optimizationRules: localFiltersToApply.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
+          enableCSharpAnalysis: finalEnableCSharp
         },
         nodes: rawNodes,
         isLoading: false,
