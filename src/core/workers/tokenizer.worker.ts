@@ -19,9 +19,17 @@ self.onmessage = async (e: MessageEvent<TokenizerInput>) => {
 
     for (const item of files) {
       try {
-        const file = await item.handle.getFile();
-        let text = await file.text();
-        const originalBytes = file.size;
+        let text = '';
+        let originalBytes = item.sizeBytes || 0;
+
+        if (item.content !== undefined) {
+          text = item.content;
+        } else if (item.handle) {
+          const file = await item.handle.getFile();
+          text = await file.text();
+          originalBytes = file.size;
+        }
+
         let optimizedBytes = originalBytes;
 
         if (isOptimizationEnabled && optimizationRules && optimizationRules.length > 0) {

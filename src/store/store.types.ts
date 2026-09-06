@@ -19,6 +19,8 @@ export interface DirectorySlice {
   isLoading: boolean;
   scannedFilesCount: number;
   rootHandle: FileSystemDirectoryHandle | null;
+  sourceMode: 'browser-fs' | 'ide-sync';
+  syncProjectName: string | null;
   abortController: AbortController | null;
   isRestoredFromProfile: boolean;
   activeTab: 'tree' | 'result';
@@ -34,6 +36,7 @@ export interface DirectorySlice {
   setSessionFileName: (name: string | null) => void;
   loadDirectory: () => Promise<void>;
   loadDirectoryFromHandle: (handle: FileSystemDirectoryHandle, applyProfile?: Profile, isRestored?: boolean) => Promise<void>;
+  loadFromIdeSync: (port: string, token: string) => Promise<void>;
   cancelDirectoryLoad: () => void;
 }
 

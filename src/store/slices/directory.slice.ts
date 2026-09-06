@@ -8,12 +8,15 @@ import { buildExtMap, recompileAndRecalculate } from '../helpers/node.helper';
 import { saveGlobalSettings } from '../helpers/settings.helper';
 import { PREDEFINED_OPTIMIZATION_RULES } from '@/core/constants/optimization.constants';
 import { DEFAULT_GLOBAL_SETTINGS } from '../constants';
+import { IdeSyncService } from '@/core/services/IdeSyncService';
 
 export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlice> = (set, get) => ({
   nodes: [],
   isLoading: false,
   scannedFilesCount: 0,
   rootHandle: null,
+  sourceMode: 'browser-fs',
+  syncProjectName: null,
   abortController: null,
   isRestoredFromProfile: false,
   activeTab: 'tree',
@@ -31,6 +34,135 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
   cancelDirectoryLoad: () => {
     get().abortController?.abort();
     set({ isLoading: false, abortController: null, scannedFilesCount: 0 });
+  },
+
+  loadFromIdeSync: async (port: string, token: string) => {
+    if (get().isLoading) throw new Error('ALREADY_LOADING');
+    
+    get().cancelTokenization();
+    
+    set({ 
+      isLoading: true, 
+      scannedFilesCount: 0, 
+      previewNode: null, 
+      sessionFileName: null,
+      realTokenMap: {},
+      optimizedBytesMap: {},
+      needsManualTokenization: false,
+      sourceMode: 'ide-sync',
+      rootHandle: null,
+    });
+
+    try {
+      const payload = await IdeSyncService.fetchContext(port, token);
+      const { projectName, files } = payload;
+      
+      const rawNodes: FileNode[] = [];
+      const dirMap = new Map<string, FileNode>();
+      
+      const rootId = crypto.randomUUID();
+      const rootNode: FileNode = {
+        id: rootId,
+        name: projectName || 'project',
+        relativePath: projectName || 'project',
+        isDirectory: true,
+        sizeBytes: 0,
+        handle: null,
+        depth: 0,
+        parentId: null,
+        isSelected: true,
+        isIgnored: false,
+        isGloballyIgnored: false,
+        isLocallyIgnored: false,
+        isExpanded: true,
+      };
+      
+      rawNodes.push(rootNode);
+      dirMap.set('', rootNode);
+
+      files.forEach((file) => {
+        const parts = file.path.split('/');
+        const fileName = parts.pop()!;
+        
+        let currentPath = '';
+        let parentId: string = rootId;
+        let depth = 1;
+
+        for (const part of parts) {
+          currentPath = currentPath ? `${currentPath}/${part}` : part;
+          
+          if (!dirMap.has(currentPath)) {
+            const dirNode: FileNode = {
+              id: crypto.randomUUID(),
+              name: part,
+              relativePath: currentPath,
+              isDirectory: true,
+              sizeBytes: 0,
+              handle: null,
+              depth,
+              parentId,
+              isSelected: true,
+              isIgnored: false,
+              isGloballyIgnored: false,
+              isLocallyIgnored: false,
+              isExpanded: false,
+            };
+            rawNodes.push(dirNode);
+            dirMap.set(currentPath, dirNode);
+          }
+          parentId = dirMap.get(currentPath)!.id;
+          depth++;
+        }
+
+        rawNodes.push({
+          id: crypto.randomUUID(),
+          name: fileName,
+          relativePath: file.path,
+          isDirectory: false,
+          sizeBytes: file.size,
+          handle: null,
+          content: file.content,
+          depth,
+          parentId,
+          isSelected: true,
+          isIgnored: false,
+          isGloballyIgnored: false,
+          isLocallyIgnored: false,
+          isExpanded: false,
+        });
+      });
+
+      set({ scannedFilesCount: rawNodes.length });
+
+      const activeGlobalSettings = get().globalSettings;
+      const extMap = buildExtMap(rawNodes, activeGlobalSettings, {});
+      
+      const hasCsFiles = rawNodes.some(n => !n.isDirectory && n.name.toLowerCase().endsWith('.cs'));
+      const currentChoice = get().localFilters?.enableCSharpAnalysis ?? true;
+      const finalEnableCSharp = hasCsFiles ? currentChoice : false;
+
+      const initialState = { 
+        ...get(),
+        syncProjectName: projectName || 'project',
+        gitignoreRegexes: [], // Відфільтровано IDE
+        isRestoredFromProfile: false,
+        localFilters: {
+          ...get().localFilters,
+          extensions: extMap,
+          enableCSharpAnalysis: finalEnableCSharp
+        },
+        nodes: rawNodes,
+        isLoading: false,
+        activeTab: 'tree' as const
+      };
+
+      set({ ...initialState, ...recompileAndRecalculate(initialState) });
+      get().evaluateTokenization();
+
+    } catch (error) {
+      set({ isLoading: false, scannedFilesCount: 0, sourceMode: 'browser-fs' });
+      throw error;
+    }
   },
 
   loadDirectory: async () => {
@@ -53,7 +185,9 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
       abortController: controller,
       realTokenMap: {},
       optimizedBytesMap: {},
-      needsManualTokenization: false
+      needsManualTokenization: false,
+      sourceMode: 'browser-fs',
+      syncProjectName: null
     });
     
     try {
@@ -138,7 +272,6 @@ export const createDirectorySlice: StateCreator<FileStore, [], [], DirectorySlic
           isOptimizationEnabled: savedFilters.isOptimizationEnabled ?? false,
           isOptimizationDirty: savedFilters.isOptimizationDirty ?? false,
           optimizationRules: savedFilters.optimizationRules ?? PREDEFINED_OPTIMIZATION_RULES,
-          // Only auto-disable if no .cs files exist, otherwise preserve profile/user setting
           enableCSharpAnalysis: hasCsFiles ? (savedFilters.enableCSharpAnalysis ?? true) : false
         };
       }

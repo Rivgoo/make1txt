@@ -37,26 +37,47 @@ export function FilePreview({ node, onClose }: FilePreviewProps) {
 
     const loadContent = async () => {
       try {
-        const file = await (node.handle as FileSystemFileHandle).getFile();
-        
-        if (isMounted) {
-          setMeta({
-            size: file.size,
-            modified: new Date(file.lastModified).toLocaleString(),
-            type: file.type || 'unknown'
-          });
-        }
-        
-        if (file.size > MAX_PREVIEW_SIZE) {
-          const slice = file.slice(0, MAX_PREVIEW_SIZE);
-          const text = await slice.text();
+        if (node.content !== undefined) {
           if (isMounted) {
-            setOriginalText(text + t('result.truncatedMark'));
-            setIsTruncated(true);
+            setMeta({
+              size: node.sizeBytes,
+              modified: t('browser.notAvailable'),
+              type: 'text/plain'
+            });
+          }
+
+          if (node.sizeBytes > MAX_PREVIEW_SIZE) {
+            if (isMounted) {
+              setOriginalText(node.content.slice(0, MAX_PREVIEW_SIZE) + t('result.truncatedMark'));
+              setIsTruncated(true);
+            }
+          } else {
+            if (isMounted) setOriginalText(node.content || '(Empty)');
+          }
+        } else if (node.handle) {
+          const file = await (node.handle as FileSystemFileHandle).getFile();
+          
+          if (isMounted) {
+            setMeta({
+              size: file.size,
+              modified: new Date(file.lastModified).toLocaleString(),
+              type: file.type || 'unknown'
+            });
+          }
+          
+          if (file.size > MAX_PREVIEW_SIZE) {
+            const slice = file.slice(0, MAX_PREVIEW_SIZE);
+            const text = await slice.text();
+            if (isMounted) {
+              setOriginalText(text + t('result.truncatedMark'));
+              setIsTruncated(true);
+            }
+          } else {
+            const text = await file.text();
+            if (isMounted) setOriginalText(text || '(Empty)');
           }
         } else {
-          const text = await file.text();
-          if (isMounted) setOriginalText(text || '(Empty)');
+          if (isMounted) setOriginalText(t('browser.notAvailable'));
         }
       } catch {
         if (isMounted) setOriginalText(t('browser.notAvailable'));

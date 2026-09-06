@@ -42,26 +42,36 @@ self.onmessage = async (e: MessageEvent<WorkerInput>) => {
   // PASS 1: Read and Index
   for (const item of files) {
     try {
-      const file = await item.handle.getFile();
       const isCSharp = item.path.toLowerCase().endsWith('.cs');
       const isAsmdef = item.path.toLowerCase().endsWith('.asmdef');
 
-      if (maxFileSizeBytes > 0 && file.size > maxFileSizeBytes) {
+      let text = '';
+      let size = 0;
+
+      if (item.content !== undefined) {
+        text = item.content;
+        size = new Blob([text]).size;
+      } else if (item.handle) {
+        const file = await item.handle.getFile();
+        size = file.size;
+        if (maxFileSizeBytes <= 0 || size <= maxFileSizeBytes) {
+          text = await file.text();
+        }
+      }
+
+      if (maxFileSizeBytes > 0 && size > maxFileSizeBytes) {
         const skipMsg = `[Skipped — file exceeds size limit: ${item.path}]\n`;
         fileTextCache.set(item.path, new Blob([skipMsg], { type: 'text/plain;charset=utf-8' }));
       } else {
-        let text = await file.text();
-
         if (isOptimizationEnabled && optimizationRules && optimizationRules.length > 0) {
           text = optimizeText(text, optimizationRules).optimizedText;
         }
 
         fileTextCache.set(item.path, new Blob([text], { type: 'text/plain;charset=utf-8' }));
 
-        if (enableCSharpAnalysis && isCSharp && file.size <= MAX_PARSE_SIZE) {
+        if (enableCSharpAnalysis && isCSharp && size <= MAX_PARSE_SIZE) {
           const meta = csharpAnalyzer.parseFile(text);
           if (meta) {
-            // Register ALL types into global registry for perfect graph resolution
             meta.classes.forEach(c => globalTypeRegistry.add(c.name));
             meta.interfaces.forEach(i => globalTypeRegistry.add(i.name));
             meta.structs.forEach(s => globalTypeRegistry.add(s.name));
